@@ -29,31 +29,6 @@
           <div class="control">
             <button class="btn primary" @click="saveState">Save</button>
           </div>
-   
-          <!-- <div class="control compact">
-            <label class="control-label">W</label>
-            <input type="number" v-model.number="docWidth" class="control-input" />
-          </div>
-          <div class="control compact">
-            <label class="control-label">H</label>
-            <input type="number" v-model.number="docHeight" class="control-input" />
-          </div>
-          <div class="control compact">
-            <label class="control-label">DPI</label>
-            <input type="number" v-model.number="dpi" class="control-input" />
-          </div>
-          <div class="control compact">
-            <label class="control-label">Hdr px</label>
-            <input type="number" v-model.number="headerFontPx" class="control-input" />
-          </div>
-          <div class="control compact">
-            <label class="control-label">Sub px</label>
-            <input type="number" v-model.number="subheaderFontPx" class="control-input" />
-          </div>
-          <div class="control compact">
-            <label class="control-label">Body px</label>
-            <input type="number" v-model.number="bodyFontPx" class="control-input" />
-          </div> -->
         </div>
 
         <div class="toolbar-right">
@@ -74,10 +49,6 @@
               <option value="sample_javelin">Sample: "JAVELIN OF THE SKIES"</option>
             </select>
           </div>
-          <!-- <div class="control">
-            <label class="control-label"><i class="ra ra-hammer"></i></label>
-            <button class="btn secondary" @click="onEquipmentButtonClick"><i class="ra ra-hammer"></i> Insert</button>
-          </div> -->
 
           <div class="control">
             <label class="control-label"><i class="ra ra-book"></i> Insert Page</label>
@@ -92,11 +63,6 @@
               <option value="advanced">Advanced Page</option>
             </select>
           </div>
-          <!-- <div class="control">
-            <label class="control-label"><i class="ra ra-book"></i></label>
-            <button class="btn secondary" @click="onPageButtonClick('info')"><i class="ra ra-book"></i> Insert</button>
-          </div> -->
-
         </div>
 
         <div class="toolbar-right">
@@ -106,16 +72,7 @@
         </div>
       </div>
 
-      <!-- <div class="editor-toolbar">
-        <div class="toolbar-left">
-          <div class="control">
-            <label class="control-label"><i class="ra ra-hammer"></i> Equipment</label>
-            <custom-dropdown :options="insertOptions" @select="onInsertSelect" placeholder="Insert..." />
-          </div>
-        </div>
-      </div> -->
-
-  <div ref="monacoContainer" class="editor" aria-label="Markdown editor" tabindex="0" @click="focusEditor"></div>
+      <div ref="monacoContainer" class="editor" aria-label="Markdown editor" tabindex="0" @click="focusEditor"></div>
     </div>
 
     <div ref="viewerContainer" class="viewer" aria-label="Document preview"></div>
@@ -139,37 +96,20 @@ export default {
     return {
       documentType: "info",
       columnCount: 2,
-      // Pixel-perfect document settings (defaults can be adjusted)
+
       docWidth: 1275,
       docHeight: 1650,
       headerFontPx: 58.333333333333336,
       subheaderFontPx: 50,
       bodyFontPx: 25,
-      // DPI and point-size controls (Illustrator often uses points)
+
       dpi: 150,
       headerFontPt: 28,
       subheaderFontPt: 24,
       bodyFontPt: 12,
-      
+
       isSaving: false,
       warningText: '',
-      // dropdown insert options for quick commands
-      // insertOptions: [
-      //   { label: 'Pages', icon: 'ra ra-book', children: [
-      //     { value: '/page info 1', label: 'New Info Page', icon: '📄' },
-      //     { value: '/page lore 1', label: 'New Lore Page', icon: '📄' },
-      //   ]},
-      //   { label: 'Notes', icon: 'ra ra-sticky-note', children: [
-      //     { value: '/note', label: 'Insert Note', icon: 'ra-compass' },
-      //     { value: '/note', label: 'Insert Lore', icon: 'ra-crown' },
-      //     { value: '/note', label: 'Insert Info', icon: 'ra-info-circle' },
-      //   ]},
-      //   { value: '/column', label: 'Insert Column', icon: '▤' },
-      //   { label: 'Equipment', icon: 'ra ra-sword', children: [
-      //     { value: '/column/left', label: 'Insert Left Column', icon: '▤' },
-      //     { value: '/column/right', label: 'Insert Right Column', icon: '▤' }
-      //   ]}
-      // ]
     };
   },
 
@@ -246,22 +186,22 @@ export default {
         this._monacoEditor.dispose();
         this._monacoEditor = null;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       if (this._viewerResizeObserver) {
         this._viewerResizeObserver.disconnect();
         this._viewerResizeObserver = null;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     try {
       if (this._editorResizeObserver) {
         this._editorResizeObserver.disconnect();
         this._editorResizeObserver = null;
       }
-    } catch (e) {}
-  try { if (window && window.__thingsEditor) delete window.__thingsEditor; } catch (e) {}
+    } catch (e) { }
+    try { if (window && window.__thingsEditor) delete window.__thingsEditor; } catch (e) { }
   },
 
   methods: {
@@ -270,26 +210,26 @@ export default {
       if (itemType === "sample_javelin") {
         this.onInsertSelect({
           value: [
-          "/equipment mythic JAVELIN OF THE SKIES",
-          "/type Fast Weapon, Mythical",
-          "/cost 7040 Silver Pieces",
-          "/next",
-          "/tag Attack Speed: 1 Turn Action",
-          "/tag Handling: 2 hands",
-          "/tag Range: 15 meters (Ranged)",
-          "/tag Size: 27 slots",
-          "/next",
-          "/damage 7d4 Energy Damage",
-          "/desc Attacks made with this weapon affect all creatures within a 1 meter wide line, originating from the user, extending out to the weapon's range. Tests for accuracy do not need to be made.",
-          "/desc This weapon is sentient, sensing objects and creatures within 10 meters of it, and can communicate basic emotions directly to its user.",
-          "/desc Damage dealt by this weapon ignores defenses.",
-          "/desc This weapon requires 1 stamina to attack with. This weapon consumes 1 cell during each attack. Ammunition used this way must be equipped on the user's back or waist slot.",
-          "/next",
-          "/flavor One of three weapons a part of the Nine Divines. It uses its sentience to implore progress and calculated improvement. Naturally, it hovers between the two hands of its user, firing trailing shards of lightning at high speeds.",
-          "/craft 1 Mythical Material Component",
-          "/craft 4 Mythical Refinement Components",
-          "/craft 3 Mythical Power Components",
-          "/end"
+            "/equipment mythic JAVELIN OF THE SKIES",
+            "/type Fast Weapon, Mythical",
+            "/cost 7040 Silver Pieces",
+            "/next",
+            "/tag Attack Speed: 1 Turn Action",
+            "/tag Handling: 2 hands",
+            "/tag Range: 15 meters (Ranged)",
+            "/tag Size: 27 slots",
+            "/next",
+            "/damage 7d4 Energy Damage",
+            "/desc Attacks made with this weapon affect all creatures within a 1 meter wide line, originating from the user, extending out to the weapon's range. Tests for accuracy do not need to be made.",
+            "/desc This weapon is sentient, sensing objects and creatures within 10 meters of it, and can communicate basic emotions directly to its user.",
+            "/desc Damage dealt by this weapon ignores defenses.",
+            "/desc This weapon requires 1 stamina to attack with. This weapon consumes 1 cell during each attack. Ammunition used this way must be equipped on the user's back or waist slot.",
+            "/next",
+            "/flavor One of three weapons a part of the Nine Divines. It uses its sentience to implore progress and calculated improvement. Naturally, it hovers between the two hands of its user, firing trailing shards of lightning at high speeds.",
+            "/craft 1 Mythical Material Component",
+            "/craft 4 Mythical Refinement Components",
+            "/craft 3 Mythical Power Components",
+            "/end"
           ].join('\n')
         });
       }
@@ -318,9 +258,9 @@ export default {
     onPageDropdownSelect(event) {
       const pageType = this.selectedPageType;
       if (pageType) {
-      this.onInsertSelect({ value: `/page ${pageType} 1` });
-      // Reset dropdown after insert
-      this.selectedPageType = "";
+        this.onInsertSelect({ value: `/page ${pageType} 1` });
+        // Reset dropdown after insert
+        this.selectedPageType = "";
       }
     },
 
@@ -348,14 +288,14 @@ export default {
             try {
               selection = editor.getSelection();
               hadFocus = document.activeElement && (this.$refs.monacoContainer && this.$refs.monacoContainer.contains(document.activeElement));
-            } catch (e) {}
+            } catch (e) { }
 
             model.setValue(content);
 
             try {
               if (selection) editor.setSelection(selection);
               if (hadFocus) editor.focus();
-            } catch (e) {}
+            } catch (e) { }
           }
         }
       }
@@ -474,7 +414,7 @@ export default {
         // expose the monaco editor instance for toolbar actions
         this._monacoEditor = editor;
         // also expose to window for quick debugging in the browser console
-        try { window.__thingsEditor = editor; } catch (e) {}
+        try { window.__thingsEditor = editor; } catch (e) { }
 
         const renderMarkdown = () => {
           const content = editor.getValue();
@@ -587,13 +527,13 @@ export default {
         // also re-layout the monaco editor on container resize
         if (container) {
           const roEditor = window.ResizeObserver ? new ResizeObserver(() => {
-            try { editor.layout(); } catch (e) {}
+            try { editor.layout(); } catch (e) { }
           }) : null;
           if (roEditor) {
             roEditor.observe(container);
             this._editorResizeObserver = roEditor;
           } else {
-            window.addEventListener('resize', () => { try { editor.layout(); } catch (e) {} });
+            window.addEventListener('resize', () => { try { editor.layout(); } catch (e) { } });
           }
         }
       }
@@ -601,9 +541,9 @@ export default {
 
     focusEditor() {
       if (this._monacoEditor) {
-        try { this._monacoEditor.focus(); } catch (e) {}
+        try { this._monacoEditor.focus(); } catch (e) { }
       } else if (this.$refs && this.$refs.monacoContainer) {
-        try { this.$refs.monacoContainer.focus(); } catch (e) {}
+        try { this.$refs.monacoContainer.focus(); } catch (e) { }
       }
     },
 
@@ -630,7 +570,7 @@ export default {
       this._monacoEditor.focus();
     },
 
-  exportImage: async function() {
+    exportImage: async function () {
       const viewerContainer = this.$refs.viewerContainer;
       if (!viewerContainer) return;
 
@@ -653,15 +593,15 @@ export default {
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i];
           var pageNumber = page.querySelector('.page-number') ? page.querySelector('.page-number').textContent.trim() : `page-${i + 1}`;
-          
+
           if (usedPageNumbers.includes(pageNumber)) {
             console.warn(`Duplicate page number found: ${pageNumber}`);
             alert(`Duplicate page number found: ${pageNumber}`);
             pageNumber = `${pageNumber} - ${i}`;
           }
-          
+
           usedPageNumbers.push(pageNumber);
-          
+
           try {
             let blob = null;
 
@@ -763,16 +703,16 @@ export default {
       });
     }
 
-      // Helper: convert points to pixels for a given DPI.
-      // 1pt = 1/72 inch. px = pt * dpi / 72
-      ,ptToPx(pt, dpi) {
-        return (parseFloat(pt) || 0) * (parseFloat(dpi) || 72) / 72;
-      }
+    // Helper: convert points to pixels for a given DPI.
+    // 1pt = 1/72 inch. px = pt * dpi / 72
+    , ptToPx(pt, dpi) {
+      return (parseFloat(pt) || 0) * (parseFloat(dpi) || 72) / 72;
+    }
 
-      // Helper: convert pixels to points for a given DPI.
-      ,pxToPt(px, dpi) {
-        return (parseFloat(px) || 0) * 72 / (parseFloat(dpi) || 72);
-      }
+    // Helper: convert pixels to points for a given DPI.
+    , pxToPt(px, dpi) {
+      return (parseFloat(px) || 0) * 72 / (parseFloat(dpi) || 72);
+    }
   }
 };
 </script>
@@ -783,14 +723,15 @@ export default {
   --doc-width: 1275px;
   --page-background: white;
 
-  --toolbar-bg: rgba(0,0,0,0.35);
+  --toolbar-bg: rgba(0, 0, 0, 0.35);
   --toolbar-fg: #fff;
-  --control-bg: rgba(255,255,255,0.06);
+  --control-bg: rgba(255, 255, 255, 0.06);
   --accent: #2f9adf;
 
   --line-width: 5px;
-  --line-offset: -38px; /* how far left from origin */
-  --line-shadow: 0 2px 6px rgba(0,0,0,0.9);
+  --line-offset: -38px;
+  /* how far left from origin */
+  --line-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
 
   --info-background: url('@/assets/documents/info-sheet.png');
   --lore-background: url('@/assets/documents/lore-sheet.png');
@@ -807,7 +748,7 @@ export default {
   --info-color: #0c4e81;
   --lore-color: #32004b;
   --equipment-color: #a36209;
-  --species-color:  #007236;
+  --species-color: #007236;
   --talent-color: #aba835;
   --toc-color: #72103e;
   --gameplay-color: #a36209;
@@ -922,7 +863,7 @@ export default {
   background: var(--toolbar-bg);
   color: var(--toolbar-fg);
   border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
   flex-wrap: wrap;
 }
 
@@ -941,21 +882,29 @@ export default {
   color: #e6eef6;
 }
 
-.control.compact { flex-direction: row; align-items: center; }
+.control.compact {
+  flex-direction: row;
+  align-items: center;
+}
 
-.control-label { font-size: 12px; opacity: 0.9; }
+.control-label {
+  font-size: 12px;
+  opacity: 0.9;
+}
 
 .control-select,
 .control-input {
   background: #f0f0f0;
   color: #000;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   padding: 6px 8px;
   border-radius: 6px;
   min-width: 64px;
 }
 
-.control-input[type=number] { width: 80px; }
+.control-input[type=number] {
+  width: 80px;
+}
 
 .btn {
   appearance: none;
@@ -967,9 +916,9 @@ export default {
 }
 
 .btn.primary {
-  background: linear-gradient(180deg,var(--accent), #176fa6);
+  background: linear-gradient(180deg, var(--accent), #176fa6);
   color: white;
-  box-shadow: 0 6px 14px rgba(34,139,199,0.25);
+  box-shadow: 0 6px 14px rgba(34, 139, 199, 0.25);
 }
 
 .editor {
@@ -986,7 +935,7 @@ export default {
   align-items: flex-start;
   position: relative;
   overflow: auto;
-  background: linear-gradient(180deg,#f3f2f0 0%, #dcdcdc 100%);
+  background: linear-gradient(180deg, #f3f2f0 0%, #dcdcdc 100%);
   padding: 12px;
   border-radius: 8px;
 }
@@ -997,39 +946,153 @@ export default {
   will-change: transform;
   background-clip: padding-box;
   background-origin: padding-box;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   border-radius: 6px;
 }
 
-.page { min-width: var(--doc-width); max-width: var(--doc-width); min-height: var(--doc-height, 1650px); max-height: var(--doc-height, 1650px); position: relative; }
-.page.page-equipment { background: var(--equipment-background); --header-color: var(--equipment-color); --page-color: var(--equipment-page-number); }
-.page.page-gameplay { background: var(--gameplay-background); --header-color: var(--gameplay-color); --page-color: var(--gameplay-page-number); }
-.page.page-info { background: var(--info-background); --header-color: var(--info-color); --page-color: var(--info-page-number); }
-.page.page-lore { background: var(--lore-background); --header-color: var(--lore-color); --page-color: var(--lore-page-number); }
-.page.page-species { background: var(--species-background); --header-color: var(--species-color); --page-color: var(--species-page-number); }
-.page.page-talent { background: var(--talent-background); --header-color: var(--talent-color); --page-color: var(--talent-page-number); }
-.page.page-toc { background: var(--toc-background); --header-color: var(--toc-color); --page-color: var(--toc-page-number); }
-.page.page-advanced { background: var(--advanced-background); --header-color: var(--advanced-color); --page-color: var(--advanced-page-number); }
+.page {
+  min-width: var(--doc-width);
+  max-width: var(--doc-width);
+  min-height: var(--doc-height, 1650px);
+  max-height: var(--doc-height, 1650px);
+  position: relative;
+}
 
-.page h1 { color: var(--header-color, #573084); font-family: "Rockwell Nova Condensed"; font-weight: bold; font-size: var(--header-font-px, 28pt); line-height: 1.1; margin: 0 0 28px; }
+.page.page-equipment {
+  background: var(--equipment-background);
+  --header-color: var(--equipment-color);
+  --page-color: var(--equipment-page-number);
+}
+
+.page.page-gameplay {
+  background: var(--gameplay-background);
+  --header-color: var(--gameplay-color);
+  --page-color: var(--gameplay-page-number);
+}
+
+.page.page-info {
+  background: var(--info-background);
+  --header-color: var(--info-color);
+  --page-color: var(--info-page-number);
+}
+
+.page.page-lore {
+  background: var(--lore-background);
+  --header-color: var(--lore-color);
+  --page-color: var(--lore-page-number);
+}
+
+.page.page-species {
+  background: var(--species-background);
+  --header-color: var(--species-color);
+  --page-color: var(--species-page-number);
+}
+
+.page.page-talent {
+  background: var(--talent-background);
+  --header-color: var(--talent-color);
+  --page-color: var(--talent-page-number);
+}
+
+.page.page-toc {
+  background: var(--toc-background);
+  --header-color: var(--toc-color);
+  --page-color: var(--toc-page-number);
+}
+
+.page.page-advanced {
+  background: var(--advanced-background);
+  --header-color: var(--advanced-color);
+  --page-color: var(--advanced-page-number);
+}
+
+.page h1 {
+  color: var(--header-color, #573084);
+  font-family: "Rockwell Nova Condensed";
+  font-weight: bold;
+  font-size: var(--header-font-px, 28pt);
+  line-height: 1.15;
+  margin: 0 0 28px;
+}
+
 .page h1.span-2 {
   position: absolute;
-  left: 150px; /* align with page-content left */
-  top: 120px;   /* adjust vertically to sit above page content */
-  width: calc(459px * 2 + 58px); /* two columns + gap */
+  left: 150px;
+  /* align with page-content left */
+  top: 125px;
+  /* adjust vertically to sit above page content */
+  width: calc(459px * 2 + 58px);
+  /* two columns + gap */
   z-index: 6;
   margin: 0 0 18px;
   box-sizing: border-box;
 }
-.page.has-span-2 .column { padding-top: 120px; }
-.page h2 { color: var(--header-color, #573084); font-family: "Rockwell Nova Condensed"; font-weight: bold; font-size: var(--subheader-font-px, 24pt); line-height: 1.1; margin: 48px 0 0; }
-.page h3 { color: var(--header-color, #573084); font-family: "Rockwell Nova Condensed"; font-weight: bold; font-size: var(--subheader-font-px, 24pt); line-height: 1.1; margin: 48px 0 0; }
-.page p { color: black; font-family: "Bahnschrift"; font-size: var(--body-font-px, 12px); margin: 0 0 30px; line-height: 1.2; }
 
-.page-content { position: absolute; left: 150px; top: 129px; display: flex; gap: 50px; }
-.column { max-width: 465px; min-width: 465px; }
+.page.has-span-2 .column {
+  padding-top: 120px;
+}
 
-.page-number { color: var(--page-color); font-family: "Rockwell Nova"; font-weight: bold; position: absolute; bottom: 25px; font-size: 56px; width: 100%; text-align: center; }
+.page h2 {
+  color: var(--header-color, #573084);
+  font-family: "Rockwell Nova Condensed";
+  font-weight: bold;
+  font-size: var(--subheader-font-px, 24pt);
+  line-height: 1.15;
+  margin: 38px 0 -5px;
+}
+
+.page h3 {
+  color: var(--header-color, #573084);
+  font-family: "Rockwell Nova Condensed";
+  font-weight: bold;
+  font-size: var(--subheader-font-px, 24pt);
+  line-height: 1.15;
+  margin: 38px 0 -5px;
+}
+
+.page p {
+  color: black;
+  font-family: "Bahnschrift";
+  font-size: var(--body-font-px, 12px);
+  margin: 0 0 30px;
+  line-height: 1.2;
+}
+
+.page-content {
+  position: absolute;
+  left: 150px;
+  top: 120px;
+  display: flex;
+  gap: 50px;
+}
+
+.column {
+  max-width: 465px;
+  min-width: 465px;
+}
+
+.column h1,
+.column h2,
+.column h3,
+.column p {
+  padding-right: 5px;
+  word-wrap: break-word;
+}
+
+.column p:first-of-type {
+  margin-top: 5px;
+}
+
+.page-number {
+  color: var(--page-color);
+  font-family: "Rockwell Nova";
+  font-weight: bold;
+  position: absolute;
+  bottom: 25px;
+  font-size: 56px;
+  width: 100%;
+  text-align: center;
+}
 
 .note.lore {
   color: black;
@@ -1049,13 +1112,17 @@ export default {
   position: absolute;
   top: 110px;
   bottom: 110px;
-  left: var(--line-offset);   /* negative to push it out to the left */
-  width: var(--line-width);   /* fixed horizontal size — prevents horizontal growth */
+  left: var(--line-offset);
+  /* negative to push it out to the left */
+  width: var(--line-width);
+  /* fixed horizontal size — prevents horizontal growth */
   background-image: linear-gradient(to right, #a7a9ac 100%, #d1d3d4 110%, #a7a9ac 120%);
   pointer-events: none;
-  z-index: 4;                 /* place under/over content as needed */
+  z-index: 4;
+  /* place under/over content as needed */
   /* filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.3)); */
-  border-radius: 2px;         /* optional subtle rounding */
+  border-radius: 2px;
+  /* optional subtle rounding */
 }
 
 .note-content {
@@ -1105,7 +1172,8 @@ export default {
   top: 0;
   left: -39px;
   bottom: 0;
-  width: 8px; /* fixed horizontal size so background cannot expand horizontally */
+  width: 8px;
+  /* fixed horizontal size so background cannot expand horizontally */
   height: 100%;
   transform: none;
   position: absolute;
@@ -1121,46 +1189,142 @@ export default {
 
 /* Responsive: stack editor/viewer on narrow windows */
 @media (max-width: 1100px) {
-  .main-container { flex-direction: column; padding: 12px; }
-  .editor-container, .viewer { width: 100%; }
-  .editor { height: 360px; }
+  .main-container {
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .editor-container,
+  .viewer {
+    width: 100%;
+  }
+
+  .editor {
+    height: 360px;
+  }
 }
 
 .equipment {
   position: relative;
   background: var(--equipment-background);
-  background-clip: padding-box; /* don’t paint behind the border */
+  background-clip: padding-box;
+  /* don’t paint behind the border */
   isolation: isolate;
-  
-  padding-right: 5px;
 
   /* border-image as before */
   border: 5px solid transparent;
   border-image-source: var(--frame);
-  border-image-slice: var(--edge-top) var(--edge-right)
-                      var(--edge-bottom) var(--edge-left);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
   border-image-width: var(--frame-edge);
   border-image-repeat: round;
 }
 
 /* map each rarity class to a custom property used by the pseudo element */
-.equipment.rarity-crude { --equipment-background: var(--rarity-crude); --frame: var(--frame-crude); }
-.equipment.rarity-common { --equipment-background: var(--rarity-common); --frame: var(--frame-common); }
-.equipment.rarity-uncommon { --equipment-background: var(--rarity-uncommon); --frame: var(--frame-uncommon); }
-.equipment.rarity-rare { --equipment-background: var(--rarity-rare); --frame: var(--frame-rare); }
-.equipment.rarity-legendary { --equipment-background: var(--rarity-legendary); --frame: var(--frame-legendary); }
-.equipment.rarity-mythic { --equipment-background: var(--rarity-mythic); --frame: var(--frame-mythic); }
+.equipment.rarity-crude {
+  --equipment-background: var(--rarity-crude);
+  --frame: var(--frame-crude);
+}
 
-.equipment-content { position: relative; background-clip: content-box; z-index: 1; padding-top: 10px; padding-left: 10px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
-.equipment-title { font-family: "Bahnschrift"; font-weight: bold; font-size: 21.5px; }
-.equipment-detail { font-family: "Bahnschrift"; font-size: 18px; z-index: 10; position: relative; }
-.equipment-detail.cost { color: white;  }
-.equipment-detail.tag { font-family: "Bahnschrift"; font-size: 21.5px; margin-bottom: 5px; margin-top: 2px; }
-.equipment-tag-type { font-weight: bold; }
-.equipment-detail.damage { font-family: "Bahnschrift"; font-stretch: semi-condensed; font-size: 21px; font-weight: bold; margin-top: 13px; margin-bottom: 25px; text-align: center; }
-.equipment-detail.desc { font-family: "Bahnschrift"; font-stretch: semi-condensed; font-size: 20.51px; margin-bottom: 25px; line-height: 1.22; }
-.equipment-detail.flavor { color: #585858; font-family: "Bahnschrift"; font-stretch: semi-condensed; font-size: 20.7px; margin-bottom: 23px; margin-top: 13px; line-height: 1.23; text-align: center; }
-.equipment-detail.craft { font-family: "Bahnschrift"; font-stretch: semi-condensed; font-size: 20.7px; margin-bottom: 1px; }
+.equipment.rarity-common {
+  --equipment-background: var(--rarity-common);
+  --frame: var(--frame-common);
+}
+
+.equipment.rarity-uncommon {
+  --equipment-background: var(--rarity-uncommon);
+  --frame: var(--frame-uncommon);
+}
+
+.equipment.rarity-rare {
+  --equipment-background: var(--rarity-rare);
+  --frame: var(--frame-rare);
+}
+
+.equipment.rarity-legendary {
+  --equipment-background: var(--rarity-legendary);
+  --frame: var(--frame-legendary);
+}
+
+.equipment.rarity-mythic {
+  --equipment-background: var(--rarity-mythic);
+  --frame: var(--frame-mythic);
+}
+
+.equipment-content {
+  position: relative;
+  background-clip: content-box;
+  z-index: 1;
+  padding-top: 10px;
+  padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.equipment-title {
+  font-family: "Bahnschrift";
+  font-weight: bold;
+  font-size: 21.5px;
+}
+
+.equipment-detail {
+  font-family: "Bahnschrift";
+  font-size: 18px;
+  z-index: 10;
+  position: relative;
+}
+
+.equipment-detail.cost {
+  color: white;
+}
+
+.equipment-detail.tag {
+  font-family: "Bahnschrift";
+  font-size: 21.5px;
+  margin-bottom: 5px;
+  margin-top: 2px;
+}
+
+.equipment-tag-type {
+  font-weight: bold;
+}
+
+.equipment-detail.damage {
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 21px;
+  font-weight: bold;
+  margin-top: 13px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.equipment-detail.desc {
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 20.51px;
+  margin-bottom: 25px;
+  line-height: 1.22;
+}
+
+.equipment-detail.flavor {
+  color: #585858;
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 20.7px;
+  margin-bottom: 23px;
+  margin-top: 13px;
+  line-height: 1.23;
+  text-align: center;
+}
+
+.equipment-detail.craft {
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 20.7px;
+  margin-bottom: 1px;
+}
 
 .equipment-section {
   position: relative;
@@ -1171,7 +1335,8 @@ export default {
   margin-left: 5px;
   /* clip the background so it doesn’t render under the border */
   background: var(--section-bg);
-  background-clip: padding-box;  /* no background behind the border:contentReference[oaicite:0]{index=0} */
+  background-clip: padding-box;
+  /* no background behind the border:contentReference[oaicite:0]{index=0} */
   /* optional: rounded corners if your frame has them */
   border-radius: 4px;
 }
@@ -1185,6 +1350,7 @@ export default {
   border-image-width: var(--section-border-size);
   border-image-repeat: round;
 }
+
 .equipment-section.section-2 {
   padding-left: 0px;
   background-color: var(--section-2-bg);
@@ -1195,9 +1361,10 @@ export default {
   border-image-width: var(--section-border-size);
   border-image-repeat: round;
 }
+
 .equipment-section.section-3 {
   padding-left: 11px;
-  padding-right: 9px; 
+  padding-right: 9px;
   padding-bottom: 30px;
   text-align: center;
   background-color: var(--section-3-bg);
@@ -1209,8 +1376,19 @@ export default {
   border-image-repeat: round;
 }
 
-.toc-entry { font-family: "Bahnschrift"; display: flex; gap: 20px; justify-content: space-between; font-size: 22px; }
-.toc-title { font-weight: bold; }
-.toc-page { color: gray; }
+.toc-entry {
+  font-family: "Bahnschrift";
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  font-size: 22px;
+}
 
+.toc-title {
+  font-weight: bold;
+}
+
+.toc-page {
+  color: gray;
+}
 </style>
