@@ -67,7 +67,41 @@
       <div class="editor-toolbar">
         <div class="toolbar-left">
           <div class="control">
-            <label class="control-label"><i class="ra ra-hammer"></i> Equipment</label>
+            <label class="control-label"><i class="ra ra-hammer"></i> Insert Item</label>
+            <select v-model="selectedItemType" @change="onItemDropdownSelect" class="control-select">
+              <option disabled selected value="">Select Item Type...</option>
+              <option value="equipment">Blank Equipment Template</option>
+              <option value="sample_javelin">Sample: "JAVELIN OF THE SKIES"</option>
+            </select>
+          </div>
+          <!-- <div class="control">
+            <label class="control-label"><i class="ra ra-hammer"></i></label>
+            <button class="btn secondary" @click="onEquipmentButtonClick"><i class="ra ra-hammer"></i> Insert</button>
+          </div> -->
+
+          <div class="control">
+            <label class="control-label"><i class="ra ra-book"></i> Insert Page</label>
+            <select v-model="selectedPageType" @change="onPageDropdownSelect" class="control-select">
+              <option disabled selected value="">Select Page Type...</option>
+              <option value="info">Info Page</option>
+              <option value="lore">Lore Page</option>
+              <option value="gameplay">Gameplay Page</option>
+              <option value="species">Species Page</option>
+              <option value="talent">Talent Page</option>
+              <option value="toc">ToC Page</option>
+              <option value="advanced">Advanced Page</option>
+            </select>
+          </div>
+          <!-- <div class="control">
+            <label class="control-label"><i class="ra ra-book"></i></label>
+            <button class="btn secondary" @click="onPageButtonClick('info')"><i class="ra ra-book"></i> Insert</button>
+          </div> -->
+
+        </div>
+
+        <div class="toolbar-right">
+          <div class="control" style="width: 300px; text-align: right; color: #f39c12;" v-if="warningText">
+            <i class="ra ra-exclamation-triangle"></i> {{ warningText }}
           </div>
         </div>
       </div>
@@ -117,7 +151,8 @@ export default {
       subheaderFontPt: 24,
       bodyFontPt: 12,
       
-      isSaving: false
+      isSaving: false,
+      warningText: '',
       // dropdown insert options for quick commands
       // insertOptions: [
       //   { label: 'Pages', icon: 'ra ra-book', children: [
@@ -230,6 +265,74 @@ export default {
   },
 
   methods: {
+    onItemDropdownSelect(event) {
+      const itemType = this.selectedItemType;
+      if (itemType === "sample_javelin") {
+        this.onInsertSelect({
+          value: [
+          "/equipment mythic JAVELIN OF THE SKIES",
+          "/type Fast Weapon, Mythical",
+          "/cost 7040 Silver Pieces",
+          "/next",
+          "/tag Attack Speed: 1 Turn Action",
+          "/tag Handling: 2 hands",
+          "/tag Range: 15 meters (Ranged)",
+          "/tag Size: 27 slots",
+          "/next",
+          "/damage 7d4 Energy Damage",
+          "/desc Attacks made with this weapon affect all creatures within a 1 meter wide line, originating from the user, extending out to the weapon's range. Tests for accuracy do not need to be made.",
+          "/desc This weapon is sentient, sensing objects and creatures within 10 meters of it, and can communicate basic emotions directly to its user.",
+          "/desc Damage dealt by this weapon ignores defenses.",
+          "/desc This weapon requires 1 stamina to attack with. This weapon consumes 1 cell during each attack. Ammunition used this way must be equipped on the user's back or waist slot.",
+          "/next",
+          "/flavor One of three weapons a part of the Nine Divines. It uses its sentience to implore progress and calculated improvement. Naturally, it hovers between the two hands of its user, firing trailing shards of lightning at high speeds.",
+          "/craft 1 Mythical Material Component",
+          "/craft 4 Mythical Refinement Components",
+          "/craft 3 Mythical Power Components",
+          "/end"
+          ].join('\n')
+        });
+      }
+      else if (itemType === "equipment") {
+        this.onInsertSelect({
+          value: [
+            "/equipment <rarity> <name>",
+            "/type",
+            "/cost",
+            "/next",
+            "/tag <tag>",
+            "/next",
+            "/damage 7d4 <damageType> Damage",
+            "/desc <description>",
+            "/next",
+            "/flavor <flavor text>",
+            "/craft <quantity> <component>",
+            "/end"
+          ].join('\n')
+        });
+      }
+      // Reset dropdown after insert
+      this.selectedItemType = "";
+    },
+
+    onPageDropdownSelect(event) {
+      const pageType = this.selectedPageType;
+      if (pageType) {
+      this.onInsertSelect({ value: `/page ${pageType} 1` });
+      // Reset dropdown after insert
+      this.selectedPageType = "";
+      }
+    },
+
+    onEquipmentButtonClick() {
+      this.onItemDropdownSelect();
+    },
+
+    onPageButtonClick(type) {
+      this.selectedPageType = type;
+      this.onPageDropdownSelect();
+    },
+
     loadState() {
       const content = localStorage.getItem('things-editor-content');
       console.log('Loaded content:', content);
@@ -361,20 +464,30 @@ export default {
           theme: 'utopia-theme'
         });
 
-          // focus editor so keyboard input is accepted immediately
-          try {
-            editor.focus();
-          } catch (e) {
-            // ignore focus errors in test environments
-          }
+        // focus editor so keyboard input is accepted immediately
+        try {
+          editor.focus();
+        } catch (e) {
+          // ignore focus errors in test environments
+        }
 
-  // expose the monaco editor instance for toolbar actions
-  this._monacoEditor = editor;
-  // also expose to window for quick debugging in the browser console
-  try { window.__thingsEditor = editor; } catch (e) {}
+        // expose the monaco editor instance for toolbar actions
+        this._monacoEditor = editor;
+        // also expose to window for quick debugging in the browser console
+        try { window.__thingsEditor = editor; } catch (e) {}
 
         const renderMarkdown = () => {
           const content = editor.getValue();
+
+          if (editor && (content.trim().length === 0 || !/^\/page\s+(equipment|gameplay|info|lore|species|talent|toc|advanced)\s+(.+)$/i.test(content.split('\n')[0]))) {
+            // if the editor is empty, show a warning
+            this.warningText = 'No pages defined. Add a page with /page <type> <number> (e.g. /page info 1) at the start of the document.';
+          }
+          else {
+            this.warningText = '';
+          }
+
+
           viewerContainer.innerHTML = '';
 
           // create a document-root sized to the Illustrator pixels
@@ -834,8 +947,8 @@ export default {
 
 .control-select,
 .control-input {
-  background: var(--control-bg);
-  color: #fff;
+  background: #f0f0f0;
+  color: #000;
   border: 1px solid rgba(255,255,255,0.06);
   padding: 6px 8px;
   border-radius: 6px;
