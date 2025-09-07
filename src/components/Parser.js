@@ -39,6 +39,7 @@ export function parse(input, columnCount = 1) {
     // Bold first to avoid double-processing inside italic.
     safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     safe = safe.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    safe = safe.replace(/\\n/g, '<br/>');
     // Links: [text](url)
     safe = safe.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (m, t, u) => {
       return `<a href="${escapeHTML(u)}">${t}</a>`;
@@ -72,10 +73,11 @@ export function parse(input, columnCount = 1) {
     equipment: /^\/equipment\s+(crude|common|uncommon|rare|legendary|mythic)\s+(.*)$/i,
     equipmentDetail: /^\/(type|cost|tag|damage|desc|flavor|craft)\s+(.*)$/i,
     equipmentNext: /^\/next$/i,
+    specialist: /^\/specialist$/i,
     noteStart: /^\/(note|info|lore)\s+(.*)$/i,
     blockEnd: /^\/end$/i,
     toc: /^\/toc\s+(begin|end)$/i,
-    heading: /^(#+)\s+(.*)$/,
+    heading: /^(#+)\s+(.*)$/, 
     // style blocks
     styleBegin: /^\/style\s+begin$/i,
     styleEnd: /^\/style\s+end$/i,
@@ -101,6 +103,7 @@ export function parse(input, columnCount = 1) {
   let equipmentSectionCount = 0;
   let tocDiv = null; // TOC container
   let styleCollect = null; // array of style lines when inside style block
+  let specialistDiv = null; // current specialist table
   const pageColumnLimits = [];
 
   const getActiveColumn = () => pageColumns[activePageIndex][activeColumnIndex];
@@ -320,6 +323,22 @@ export function parse(input, columnCount = 1) {
     return { text: remaining, classes, id, style, span };
   };
 
+  const addSpecialistTable = () => {
+    const div = createEl('div', 'specialist-table');
+    activePage.appendChild(div);
+    const headerWrap = createEl('div', 'specialist-header');
+    div.appendChild(headerWrap);
+    const contentWrap = createEl('div', 'specialist-content');
+    div.appendChild(contentWrap);
+    const headerRow = createEl('div', 'specialist-row header');
+    ['Talent Name', 'Prerequisites', 'Abilities'].forEach((text, idx) => {
+      const cell = createEl('div', 'specialist-cell cell-' + (idx + 1), text);
+      headerRow.appendChild(cell);
+    });
+    div.appendChild(headerRow);
+    specialistDiv = div;
+  };
+
   // ---------- Main loop ----------
   for (let i = 0; i < lines.length; i++) {
     const raw = lines[i];
@@ -374,6 +393,40 @@ export function parse(input, columnCount = 1) {
       continue;
     }
 
+    if (specialistDiv) {
+      if (RE.blockEnd.test(line)) {
+        specialistDiv = null;
+        continue;
+      } else {
+        const title = /^\/title\s*(.*)$/i.exec(line);
+        if (title) {
+          const h2 = createEl('h2', 'specialist-title', title[1]);
+          specialistDiv.querySelector('.specialist-header').appendChild(h2);
+          continue;
+        }
+
+        const desc = /^\/desc\s*(.*)$/i.exec(line);
+        if (desc) {
+          const p = createEl('p', 'specialist-desc');
+          p.innerHTML = applyInlineFormatting(desc[1]);
+          specialistDiv.querySelector('.specialist-header').appendChild(p);
+          continue;
+        }
+
+        const splits = line.split('|').map(s => s.trim());
+        if (splits.length === 3) {
+          const row = createEl('div', 'specialist-row');
+          splits.forEach((text, idx) => {
+            const cell = createEl('div', 'specialist-cell cell-' + (idx + 1));
+            cell.innerHTML = applyInlineFormatting(text);
+            row.appendChild(cell);
+          });
+          specialistDiv.querySelector('.specialist-content').appendChild(row);
+          continue;
+        }
+      }
+    }
+
     // Generic command matching
     let m;
     if ((m = line.match(RE.page))) { startNewPage(m[1].toLowerCase(), m[2]); continue; }
@@ -384,6 +437,7 @@ export function parse(input, columnCount = 1) {
     if ((m = line.match(RE.columns))) { pageColumnLimits[activePageIndex] = parseInt(m[1], 10) || columnCount; continue; }
     if ((m = line.match(RE.spacing))) { addSpacing(m[2]); continue; }
     if ((m = line.match(RE.equipment))) { startEquipment(m[1], m[2]); continue; }
+    if ((m = line.match(RE.specialist))) { addSpecialistTable(); continue; }
     if ((m = line.match(RE.noteStart))) { startNote(m[1], m[2]); continue; }
     if ((m = line.match(RE.img))) {
       const src = m[1];

@@ -43,16 +43,17 @@
         <div class="toolbar-left">
           <div class="control">
             <label class="control-label"><i class="ra ra-hammer"></i> Insert Item</label>
-            <select v-model="selectedItemType" @change="onItemDropdownSelect" class="control-select">
+            <select @change="onItemDropdownSelect" class="control-select">
               <option disabled selected value="">Select Item Type...</option>
               <option value="equipment">Blank Equipment Template</option>
               <option value="sample_javelin">Sample: "JAVELIN OF THE SKIES"</option>
+              <option value="sample_specialist_table">Sample: Specialist Talent Table</option>
             </select>
           </div>
 
           <div class="control">
             <label class="control-label"><i class="ra ra-book"></i> Insert Page</label>
-            <select v-model="selectedPageType" @change="onPageDropdownSelect" class="control-select">
+            <select @change="onPageDropdownSelect" class="control-select">
               <option disabled selected value="">Select Page Type...</option>
               <option value="info">Info Page</option>
               <option value="lore">Lore Page</option>
@@ -206,8 +207,8 @@ export default {
 
   methods: {
     onItemDropdownSelect(event) {
-      const itemType = this.selectedItemType;
-      if (itemType === "sample_javelin") {
+      console.log('Item dropdown changed:', event);
+      if (event.target.value === "sample_javelin") {
         this.onInsertSelect({
           value: [
             "/equipment mythic JAVELIN OF THE SKIES",
@@ -233,7 +234,7 @@ export default {
           ].join('\n')
         });
       }
-      else if (itemType === "equipment") {
+      else if (event.target.value === "equipment") {
         this.onInsertSelect({
           value: [
             "/equipment <rarity> <name>",
@@ -251,12 +252,31 @@ export default {
           ].join('\n')
         });
       }
+      else if (event.target.value === "sample_specialist_table") {
+        this.onInsertSelect({
+          value: [
+            "/page talent 1",
+            "/specialist",
+            "/title Arcane Specialist Talents",
+            "/desc Arcane specialist talents are used to push a caster when putting spells together, allowing for significant versatility. Some require that the caster have a specific talent within the Magecraft tree, others require that the caster can simply cast spells at all, even less require specific trait scores.",
+            "Subtle Spells | Must have at least one talent from the **Magecraft** core talent tree. | You may cast spells without making any physical or audible gestures. Creatures gaina point of favor on tests made to resist spells cast this way. You may cast spells 2 meters through a medium rather than 1.",
+            "Mystical Cognizance | Must have the **Subtle Spells** specialist talent. | When casting spells with no physical gestures, creatures do not gain a point of favor on tests made to resist spells cast this way. You may cast spells 3 meters through a medium rather than 2.",
+            "Arcane Withdrawal | Must know the Art of **Enchantment.** | You may spend 6 turn actions to undo a permanent spell that you cast, given you are within 1 meter of the spell's effects.",
+            "In Tune | Must have a **Will** score of 10 or higher. | Your spellcap is equal to your **Will** score. If you have no Spellcap, spells you cast cost less stamina by an amount equal to your **Soul** score.",
+            "Enlightened | Must have the **In Tune** specialist talent.\\nMust be able to use at least three **Arcane Arts.** | Your Spellcap is equal to double your **Will** score. If you have no Spellcap, spells you cast cost less stamina by an amount equal to your **Mind** score.",
+            "Occult Mind | Must have at least one talent rom the **Magecraft** core talent tree. | You gain 2 points of favor on tests made to resist losing Focus or breaking Concentration.",
+            "Pyromancy | Must know the Art of **Evocation.** | You may cast spells that deal only Heat damage and cost 3 stamina or less after discounts without spending any stamina.",
+            "Cryomancy | Must know the Art of **Evocation.** | You may cast spells that deal only Chill damage and cost 3 stamina or less after discounts without spending any stamina.",
+            "/end"
+          ].join('\n')
+        })
+      }
       // Reset dropdown after insert
       this.selectedItemType = "";
     },
 
     onPageDropdownSelect(event) {
-      const pageType = this.selectedPageType;
+      const pageType = event.target.value;
       if (pageType) {
         this.onInsertSelect({ value: `/page ${pageType} 1` });
         // Reset dropdown after insert
@@ -339,9 +359,11 @@ export default {
             tokenizer: {
               root: [
                 // commands that start a line: /page, /column, /note, /end, /spacing, /page-num
-                [/^\/(page|column|note|info|lore|end|spacing|page-num|advanced|toc )\b/i, 'utopia.command'],
+                [/^\/(page|column|note|info|lore|end|spacing|page-num|advanced|toc)\b/i, 'utopia.command'],
                 // page types used with /page commands (case-insensitive)
                 [/(equipment|gameplay|info|lore|species|talent|toc|advanced)\b/i, 'utopia.pagetype'],
+                // talents
+                [/\/(specialist)\b/i, 'utopia.talent'],
                 // equipment, spells (case-insensitive)
                 [/\/(equipment|spell)\b/i, 'utopia.equipment'],
                 [/\/(type|cost|tag|damage|desc|flavor|craft)\b/i, 'utopia.equipment'],
@@ -361,8 +383,17 @@ export default {
                 // bold / italic inline (simple)
                 [/\*\*(.+?)\*\*/, 'utopia.strong'],
                 [/\*(.+?)\*/, 'utopia.emphasis'],
-                // everything else
-                [/[^\n]+/, '']
+                // escaped characters (use Monarch reference to the escapes pattern)
+                [/@escapes/, 'string.escape'],
+                [/\n/, 'string.escape'],
+                // table cells
+                [/[A-Za-z0-9\s]+(?=\||$)/, 'table-cell'],
+                // whitespace (consume spaces so word-based rules can match at word-start)
+                [/[ \t]+/, ''],
+                // pipes
+                [/\|/, 'delimiter.pipe'],
+                // everything else (avoid consuming pipes so pipe token can match)
+                [/[^|\n]+/, '']
               ]
             }
           });
@@ -377,6 +408,8 @@ export default {
 
               { token: 'utopia.comment', foreground: '6272a4' }, // blue
 
+              { token: 'utopia.talent', foreground: 'ffb86c' }, // light orange
+
               { token: 'utopia.crude', foreground: '8f9092' },
               { token: 'utopia.common', foreground: '737790' },
               { token: 'utopia.uncommon', foreground: '809a7d' },
@@ -384,10 +417,15 @@ export default {
               { token: 'utopia.legendary', foreground: 'b78e70' },
               { token: 'utopia.mythical', foreground: 'a7645b' },
 
+              { token: 'table-cell', foreground: 'ff965d' },
+
               { token: 'utopia.heading', foreground: 'ffd166', fontStyle: 'bold' }, // gold
               { token: 'number', foreground: 'c792ea' }, // purple
               { token: 'utopia.strong', fontStyle: 'bold' },
-              { token: 'utopia.emphasis', fontStyle: 'italic' }
+              { token: 'utopia.emphasis', fontStyle: 'italic' },
+
+              { token: 'string.escape', foreground: 'ff79c6' }, // pink
+              { token: 'delimiter.pipe', foreground: 'ffd166' } // white
             ],
             colors: {
               'editor.background': '#1e1e1e'
@@ -419,13 +457,14 @@ export default {
         const renderMarkdown = () => {
           const content = editor.getValue();
 
-          if (editor && (content.trim().length === 0 || !/^\/page\s+(equipment|gameplay|info|lore|species|talent|toc|advanced)\s+(.+)$/i.test(content.split('\n')[0]))) {
-            // if the editor is empty, show a warning
-            this.warningText = 'No pages defined. Add a page with /page <type> <number> (e.g. /page info 1) at the start of the document.';
-          }
-          else {
-            this.warningText = '';
-          }
+          // if (editor && (content.trim().length === 0 || !/^\/page\s+(equipment|gameplay|info|lore|species|talent|toc|advanced)\s+(.+)$/i.test(content.split('\n')[0]))) {
+          //   // if the editor is empty, show a warning
+          //   this.warningText = 'No pages defined. Add a page with /page <type> <number> (e.g. /page info 1) at the start of the document.';
+          // }
+          // else {
+          //   this.warningText = '';
+          // }
+          this.warningText = '';
 
 
           viewerContainer.innerHTML = '';
@@ -794,6 +833,8 @@ export default {
   --edge-right: 64;
   --edge-bottom: 64;
   --edge-left: 64;
+
+  --specialist-table: url('@/assets/blocks/specialist-table.png');
 }
 
 @font-face {
@@ -1390,5 +1431,101 @@ export default {
 
 .toc-page {
   color: gray;
+}
+
+.specialist-table {
+  position: absolute;
+  inset: 0;
+  background-image: var(--specialist-table);
+}
+
+.specialist-header {
+  position: absolute;
+  top: 93px;
+  left: 105px;
+  padding-right: 119px;
+  word-wrap: break-word;
+  word-break: break-all;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -moz-hyphens: auto;
+  -ms-hyphens: auto;
+  font-family: "Bahnschrift";
+}
+
+.specialist-content {
+  inset: 251px 88px 163px 105px;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.specialist-row.header {
+  position: absolute;
+  top: 211px;
+  left: 105px;
+  font-family: "Bahnschrift";
+  display: grid;
+  grid-template-columns: 281px 285px 1fr;
+  gap: 0;
+}
+
+.specialist-row.header .specialist-cell.cell-1,
+.specialist-row.header .specialist-cell.cell-2,
+.specialist-row.header .specialist-cell.cell-3 {
+  font-size: 25px;
+  font-weight: bold;
+}
+
+.specialist-row {
+  flex: 1;
+  align-items: center;
+  display: grid;
+  grid-template-columns: 292px 282px 1fr;
+}
+
+.specialist-cell {
+  font-size: 19.5px;
+}
+
+.specialist-cell.cell-1 {
+  font-weight: bold;
+}
+
+.specialist-cell.cell-2 {
+  letter-spacing: 0.2px;
+  font-size: 20.5px;
+  padding-right: 38px;
+}
+
+.specialist-cell.cell-3 {
+  padding-bottom: 8px;
+  font-size: 20.8px;
+  padding-right: 25px;
+}
+
+.specialist-table .specialist-title {
+  font-family: "Bahnschrift";
+  font-size: 25px;
+  font-weight: bold;  
+  margin: 0;
+  padding: 0;
+  color: black;
+}
+
+.specialist-table .specialist-desc {
+  color: black;
+  font-family: "Bahnschrift";
+  font-size: 20.5px;
+  margin: 0 0 30px;
+  text-align: left;
+  line-height: 1.2;
+  word-break: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+  -moz-hyphens: auto;
+  -ms-hyphens: auto;
 }
 </style>
