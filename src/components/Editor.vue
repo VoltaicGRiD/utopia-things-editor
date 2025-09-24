@@ -48,6 +48,7 @@
               <option value="equipment">Blank Equipment Template</option>
               <option value="sample_javelin">Sample: "JAVELIN OF THE SKIES"</option>
               <option value="sample_specialist_table">Sample: Specialist Talent Table</option>
+              <option value="sample_spell">Sample: Spell Template</option>
             </select>
           </div>
 
@@ -267,6 +268,24 @@ export default {
             "Occult Mind | Must have at least one talent rom the **Magecraft** core talent tree. | You gain 2 points of favor on tests made to resist losing Focus or breaking Concentration.",
             "Pyromancy | Must know the Art of **Evocation.** | You may cast spells that deal only Heat damage and cost 3 stamina or less after discounts without spending any stamina.",
             "Cryomancy | Must know the Art of **Evocation.** | You may cast spells that deal only Chill damage and cost 3 stamina or less after discounts without spending any stamina.",
+            "/end"
+          ].join('\n')
+        })
+      }
+      else if (event.target.value === "sample_spell") {
+        this.onInsertSelect({
+          value: [
+            "/page equipment 1",
+            "/spell DISPEL",
+            "/type Utility",
+            "/arts Enchantment, Illusion, Necromancy, Evocation",
+            "/next",
+            "/tag Duration: Immediate",
+            "/tag Range: Touch",
+            "/tag AOE: Target Spell",
+            "/next",
+            "/stamina 5 TIMES X STAMINA",
+            "/desc You grasp something affected by a spell, methodically unweaving its runes. If a creature is currently focusing or concentrating on the spell, it makes a Will contest against you. Given the spell is no older than X hours and any apposing creatures fail their test, the spell ends.",
             "/end"
           ].join('\n')
         })
@@ -833,6 +852,15 @@ export default {
   --edge-right: 64;
   --edge-bottom: 64;
   --edge-left: 64;
+
+  --artistry-enchantment: url('@/assets/artistries/enchantment.svg');
+  --artistry-alteration:  url('@/assets/artistries/alteration.svg');
+  --artistry-array:  url('@/assets/artistries/array.svg');
+  --artistry-divination: url('@/assets/artistries/divination.svg');
+  --artistry-evocation:  url('@/assets/artistries/evocation.svg');
+  --artistry-illusion: url('@/assets/artistries/illusion.svg');
+  --artistry-necromancy:  url('@/assets/artistries/necromancy.svg');
+  --artistry-wake:  url('@/assets/artistries/wake.svg');  
 
   --specialist-table: url('@/assets/blocks/specialist-table.png');
 }
@@ -1416,6 +1444,213 @@ export default {
   border-image-width: var(--section-border-size);
   border-image-repeat: round;
 }
+
+.spell {
+  position: relative;
+  background: var(--rarity-crude);
+  background-clip: padding-box;
+  /* don’t paint behind the border */
+  isolation: isolate;
+
+  /* border-image as before */
+  border: 5px solid transparent;
+  border-image-source: var(--frame-crude);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  border-image-width: var(--frame-edge);
+  border-image-repeat: round;
+}
+
+.spell-content {
+  position: relative;
+  background-clip: content-box;
+  z-index: 1;
+  padding-top: 10px;
+  padding-left: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+}
+
+.spell-title {
+  font-family: "Bahnschrift";
+  font-weight: bold;
+  font-size: 21.5px;
+}
+
+.spell-detail {
+  font-family: "Bahnschrift";
+  font-size: 18px;
+  z-index: 10;
+  position: relative;
+}
+
+.spell-detail.arts {
+  color: white;
+}
+
+.spell-detail.tag {
+  font-family: "Bahnschrift";
+  font-size: 21.5px;
+  margin-bottom: 5px;
+  margin-top: 2px;
+}
+
+.spell-tag-type {
+  font-weight: bold;
+}
+
+.spell-detail.stamina,
+.spell-detail.sta {
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 21px;
+  font-weight: bold;
+  margin-top: 13px;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+.spell-detail.desc {
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 20.51px;
+  margin-bottom: 25px;
+  line-height: 1.22;
+  text-align: center;
+}
+
+.spell-detail.flavor {
+  color: #585858;
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 20.7px;
+  margin-bottom: 23px;
+  margin-top: 13px;
+  line-height: 1.23;
+  text-align: center;
+}
+
+.spell-detail.craft {
+  font-family: "Bahnschrift";
+  font-stretch: semi-condensed;
+  font-size: 20.7px;
+  margin-bottom: 1px;
+}
+
+.spell-section {
+  position: relative;
+  margin-top: 2px;
+  /* reserve space for the border on all sides */
+  padding-left: 3px;
+  padding-top: 10px;
+  margin-left: 5px;
+  /* clip the background so it doesn’t render under the border */
+  background: var(--section-bg);
+  background-clip: padding-box;
+  /* no background behind the border:contentReference[oaicite:0]{index=0} */
+  /* optional: rounded corners if your frame has them */
+  border-radius: 4px;
+}
+
+.spell-section.section-1 {
+  background-color: var(--section-1-bg);
+  /* draw the torn frame; reuse your existing border image variables */
+  border: 2px solid transparent;
+  border-image-source: var(--section-1-border);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  border-image-width: var(--section-border-size);
+  border-image-repeat: round;
+}
+
+.spell-section.section-2 {
+  padding-left: 0px;
+  background-color: var(--section-2-bg);
+  /* draw the torn frame; reuse your existing border image variables */
+  border: 5px solid transparent;
+  border-image-source: var(--section-2-border);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  border-image-width: var(--section-border-size);
+  border-image-repeat: round;
+  position: relative;
+}
+
+.spell-section .artistry-container {
+  display: flex;
+  align-items: center;
+  gap: 0px;
+  position: absolute;
+  left: 0; right: 0; top: 0; bottom: 0;
+  height: 100%;
+  width: 100%;
+  pointer-events: none;
+  opacity: 0.2;
+}
+
+.spell-section .artistry-container-1 {
+  justify-content: center;
+}
+
+.spell-section .artistry-container-2 {
+  justify-content: space-around;
+}
+
+.spell-section .artistry-container-3,
+.spell-section .artistry-container-4,
+.spell-section .artistry-container-5,
+.spell-section .artistry-container-6 {
+  justify-content: center;
+}
+
+.spell-section .artistry-container-3 .artistry-icon:nth-child(odd),
+.spell-section .artistry-container-4 .artistry-icon:nth-child(odd),
+.spell-section .artistry-container-5 .artistry-icon:nth-child(odd),
+.spell-section .artistry-container-6 .artistry-icon:nth-child(odd) {
+  position: relative;
+  top: -25px;
+}
+.spell-section .artistry-container-3 .artistry-icon:nth-child(even),
+.spell-section .artistry-container-4 .artistry-icon:nth-child(even),
+.spell-section .artistry-container-5 .artistry-icon:nth-child(even),
+.spell-section .artistry-container-6 .artistry-icon:nth-child(even) {
+  position: relative;
+  bottom: -25px;
+}
+
+.artistry-icon {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.artistry-enchantment {
+  background-image: var(--artistry-enchantment);
+}
+.artistry-alteration {
+  background-image: var(--artistry-alteration);
+}
+.artistry-array {
+  background-image: var(--artistry-array);
+}
+.artistry-divination {
+  background-image: var(--artistry-divination);
+}
+.artistry-evocation {
+  background-image: var(--artistry-evocation);
+}
+.artistry-illusion {
+  background-image: var(--artistry-illusion);
+}
+.artistry-necromancy {
+  background-image: var(--artistry-necromancy);
+}
+.artistry-wake {
+  background-image: var(--artistry-wake);
+}
+
 
 .toc-entry {
   font-family: "Bahnschrift";

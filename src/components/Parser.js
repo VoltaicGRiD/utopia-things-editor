@@ -73,6 +73,9 @@ export function parse(input, columnCount = 1) {
     equipment: /^\/equipment\s+(crude|common|uncommon|rare|legendary|mythic)\s+(.*)$/i,
     equipmentDetail: /^\/(type|cost|tag|damage|desc|flavor|craft)\s+(.*)$/i,
     equipmentNext: /^\/next$/i,
+    spell: /^\/spell\s+(.*)$/i,
+    spellDetail: /^\/(type|arts|tag|sta|stamina|desc)\s+(.*)$/i,
+    spellNext: /^\/next$/i,
     specialist: /^\/specialist$/i,
     noteStart: /^\/(note|info|lore)\s+(.*)$/i,
     blockEnd: /^\/end$/i,
@@ -101,6 +104,10 @@ export function parse(input, columnCount = 1) {
   let equipmentDiv = null; // current equipment wrapper
   let equipmentSectionContainer = null; // current equipment inner section
   let equipmentSectionCount = 0;
+  let spellDiv = null;
+  let spellArtistries = [];
+  let spellSectionContainer = null;
+  let spellSectionCount = 0;
   let tocDiv = null; // TOC container
   let styleCollect = null; // array of style lines when inside style block
   let specialistDiv = null; // current specialist table
@@ -151,6 +158,18 @@ export function parse(input, columnCount = 1) {
     equipmentSectionCount = 0;
   };
 
+  const startSpell = (name) => {
+    const spell = createEl('div', 'spell');
+    const contentWrap = createEl('div', 'spell-content');
+    const title = createEl('div', 'spell-title', name);
+    contentWrap.appendChild(title);
+    spell.appendChild(contentWrap);
+    getActiveColumn().appendChild(spell);
+    spellDiv = spell;
+    spellSectionContainer = contentWrap;
+    spellSectionCount = 0;
+  };
+
   const addEquipmentDetail = (kind, rawContent) => {
     if (!equipmentDiv) return;
     // Don't create a new section until the first 'next' is called
@@ -174,6 +193,33 @@ export function parse(input, columnCount = 1) {
     equipmentSectionContainer.appendChild(detail);
   };
 
+  const addSpellDetail = (kind, rawContent) => {
+    if (!spellDiv) return;
+    // Don't create a new section until the first 'next' is called
+    // if (!spellSectionContainer || spellSectionCount === 0) {
+    //   spellSectionCount = 1;
+    //   const section = createEl('div', 'spell-section section-1');
+    //   spellDiv.appendChild(section);
+    //   spellSectionContainer = section;
+    // }
+    const detail = createEl('div', 'spell-detail ' + kind.toLowerCase());
+    if (kind.toLowerCase() === 'tag') {
+      const [left, ...rest] = rawContent.split(':');
+      const right = rest.join(':').trim();
+      const first = createEl('span', 'equipment-tag-type', left.trim() + ': ');
+      const second = createEl('span', 'equipment-tag-content', right);
+      detail.appendChild(first);
+      detail.appendChild(second);
+    } else if (kind.toLowerCase() === "arts") {
+      const arts = rawContent.split(',');
+      arts.forEach(a => spellArtistries.push(a.trim().toLowerCase()));
+      detail.textContent = rawContent;
+    } else {
+      detail.textContent = rawContent;
+    }
+    spellSectionContainer.appendChild(detail);
+  };
+
   const nextEquipmentSection = () => {
     if (!equipmentDiv) return;
     equipmentSectionCount += 1;
@@ -182,10 +228,35 @@ export function parse(input, columnCount = 1) {
     equipmentSectionContainer = section;
   };
 
+  const nextSpellSection = () => {
+    if (!spellDiv) return;
+    spellSectionCount += 1;
+    const section = createEl('div', 'spell-section section-' + spellSectionCount);
+    spellDiv.appendChild(section);
+    spellSectionContainer = section;
+  }
+
   const endEquipment = () => {
     equipmentDiv = null;
     equipmentSectionContainer = null;
     equipmentSectionCount = 0;
+  };
+
+  const endSpell = () => {
+    const section = spellDiv.querySelector('.section-2');
+    const artistryCount = spellArtistries.length;
+    const container = createEl('div', 'artistry-container artistry-container-' + artistryCount, '');
+    section.appendChild(container);
+    for (const artistry of spellArtistries) {
+      const artistryIcon = createEl('img', `artistry-icon artistry-${artistry}`, '')
+      artistryIcon.setAttribute('width', '130');
+      artistryIcon.setAttribute('height', '130');
+      container.appendChild(artistryIcon);
+    } 
+
+    spellDiv = null;
+    spellSectionContainer = null;
+    spellSectionCount = 0;
   };
 
   const startNote = (type, firstLine) => {
@@ -382,6 +453,12 @@ export function parse(input, columnCount = 1) {
       if (mDet) { addEquipmentDetail(mDet[1], mDet[2]); continue; }
     }
 
+    if (spellDiv && !RE.blockEnd.test(line)) {
+      if (RE.spellNext.test(line)) { nextSpellSection(); continue; }
+      const mDet = line.match(RE.spellDetail);
+      if (mDet) { addSpellDetail(mDet[1], mDet[2]); continue; }
+    }
+
     if (tocDiv && !RE.toc.test(line)) {
       // Expect pattern: Title | 001   (page part optional)
       const parts = line.split('|');
@@ -437,6 +514,7 @@ export function parse(input, columnCount = 1) {
     if ((m = line.match(RE.columns))) { pageColumnLimits[activePageIndex] = parseInt(m[1], 10) || columnCount; continue; }
     if ((m = line.match(RE.spacing))) { addSpacing(m[2]); continue; }
     if ((m = line.match(RE.equipment))) { startEquipment(m[1], m[2]); continue; }
+    if ((m = line.match(RE.spell))) { startSpell(m[1]); continue; }
     if ((m = line.match(RE.specialist))) { addSpecialistTable(); continue; }
     if ((m = line.match(RE.noteStart))) { startNote(m[1], m[2]); continue; }
     if ((m = line.match(RE.img))) {
@@ -452,7 +530,7 @@ export function parse(input, columnCount = 1) {
       getActiveColumn().appendChild(img);
       continue;
     }
-    if (RE.blockEnd.test(line)) { endNote(); endEquipment(); endTOC(); continue; }
+    if (RE.blockEnd.test(line)) { endNote(); endEquipment(); endSpell(); endTOC(); continue; }
     if ((m = line.match(RE.toc))) { if (m[1].toLowerCase() === 'begin') startTOC(); else endTOC(); continue; }
     if (RE.hr.test(line) || /^\/hr$/i.test(line)) { getActiveColumn().appendChild(document.createElement('hr')); continue; }
     if (RE.pageBreak.test(line)) { const pb = createEl('div', 'page-break'); getActiveColumn().appendChild(pb); continue; }
