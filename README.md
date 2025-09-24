@@ -1,7 +1,5 @@
 # things-editor
 
-[![Release](https://img.shields.io/github/v/release/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/releases)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/VoltaicGRiD/utopia-things-editor/ci.yml?branch=main&style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/actions)
 [![Issues](https://img.shields.io/github/issues/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/issues)
 [![Stars](https://img.shields.io/github/stars/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/stargazers)
 [![License](https://img.shields.io/github/license/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/blob/main/LICENSE)
