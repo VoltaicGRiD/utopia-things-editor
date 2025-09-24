@@ -5,6 +5,7 @@
 [![Issues](https://img.shields.io/github/issues/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/issues)
 [![Stars](https://img.shields.io/github/stars/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/stargazers)
 [![License](https://img.shields.io/github/license/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/blob/main/LICENSE)
+[![Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/voltaicgrid)
 
 This repository contains the Things Editor web app and a lightweight markup parser at `src/components/Parser.js`.
 
