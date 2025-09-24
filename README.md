@@ -1,11 +1,14 @@
 # things-editor
 
-## Project setup
-# things-editor
+[![Release](https://img.shields.io/github/v/release/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/VoltaicGRiD/utopia-things-editor/ci.yml?branch=main&style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/actions)
+[![Issues](https://img.shields.io/github/issues/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/issues)
+[![Stars](https://img.shields.io/github/stars/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/stargazers)
+[![License](https://img.shields.io/github/license/VoltaicGRiD/utopia-things-editor?style=flat-square)](https://github.com/VoltaicGRiD/utopia-things-editor/blob/main/LICENSE)
 
 This repository contains the Things Editor web app and a lightweight markup parser at `src/components/Parser.js`.
 
-This README documents the parser commands, attribute syntax, examples, and how to run tests.
+The editor provides a Monaco-based text editor with a live preview powered by the parser and tools to export pages as PNGs.
 
 ## Quick commands
 
@@ -33,76 +36,55 @@ Lint:
 npm run lint
 ```
 
-## Parser overview
+## What this project provides
 
-Function: parse(input: string, columnCount = 1) -> HTMLElement
+- A lightweight markup parser: `src/components/Parser.js` (function: `parse(input: string, columnCount = 1) -> HTMLElement`). It returns a `div.content-parent` containing `.page` elements, each with `.page-content` and one or more `.column` children.
+- A visual editor UI at `src/components/Editor.vue` that embeds Monaco, exposes document controls (columns, page type, templates), shows a live rendered preview, and supports exporting pages to PNG via `dom-to-image-more`.
+- Unit tests for the parser in `tests/parser.test.js` (Jest + jsdom).
 
-- Returns a `div.content-parent` containing `.page` elements with `.page-content` and `.column` children.
-- Designed for rendering simple document markup into DOM nodes.
+## Editor (UI) overview
 
-Location: `src/components/Parser.js`
+Location: `src/components/Editor.vue`
 
-Tests: `tests/parser.test.js`
+Key features:
+- Monaco-based text editor with lightweight syntax highlighting for parser commands.
+- Live preview that renders parsed DOM from `parse()` and scales the document to preserve pixel font sizes.
+- Toolbar controls for page type, column count, document width/height, font sizes (px/pt) and DPI.
+- Template insertions for equipment, spells, talent/specialist tables and other reusable blocks.
+- Auto-save to `localStorage` under the key `things-editor-content` (interval-based autosave).
+- Export: renders each `.page` into a PNG (one file per page) and packages them into a ZIP using `JSZip` and `FileSaver`.
 
-## Full command reference
+Dependencies used by the editor:
+- `monaco-editor`
+- `dom-to-image-more`
+- `jszip`
+- `file-saver`
 
-Lines beginning with a slash (`/`) are commands. Commands are case-insensitive unless noted.
+## Parser overview & supported commands
 
-- /page <type> <label>
-	- Create a new page with the given type and optional label.
-	- type: equipment | gameplay | info | lore | species | talent | toc | advanced
-	- label is a number or string that becomes the `.page-number` content.
+Lines beginning with a slash (`/`) are commands (case-insensitive). The parser also supports Markdown-like headings, lists, code fences and inline formatting. Below are the most used commands; see the source for full behavior.
 
-- /columns <N>
-	- Set the number of columns for the current page to N. (Overrides the default columnCount passed to parse.)
-
-- /column or /col
-	- Advance to the next column in the active page.
-
-- /spacing <px> or /sp <px>
-	- Insert vertical spacing of the given pixel height.
-
-- /page-num <N>
-	- Insert a page number element (formatted as 3 digits).
-
-- /page-break
-	- Insert an element with class `page-break` to indicate a manual break (for CSS to style).
-
-- /style begin ... /style end
-	- Collect lines until `/style end` and inject a `<style>` tag into the returned document.
-	- Basic sanitization removes `<` and `>` characters from the collected text. Use with caution for untrusted input.
-
-- /img <src> [alt and attribute block]
-	- Insert an `<img>` into the current column. You may append an attribute block to set classes/id/style/alt.
-	- Example: `/img /assets/logo.png Logo {.center}`
-
-- /note <text>  (aliases: /info, /lore)
-	- Start a decorative note box. Content lines following the start become paragraph lines inside the note.
-	- End with `/end`.
-
-- /equipment <rarity> <name>
-	- Start an equipment block with rarity (crude, common, uncommon, rare, legendary, mythic) and a title.
-	- Following lines may use commands: `/type`, `/cost`, `/tag`, `/damage`, `/desc`, `/flavor`, `/craft` to add details.
-	- Use `/next` to start a new equipment-section and `/end` to close the equipment block.
-
-- /toc begin  ... /toc end
-	- Start a Table of Contents block. Inside, each line is interpreted as `Title | Page` (page is optional) and becomes a `.toc-entry`.
-
-- Headings: `#`, `##`, `###`, etc.
-	- Standard Markdown-style headings. You can append an attribute block (see below).
-
-- Lists:
-	- Unordered: lines starting with `- ` or `* ` produce a `<ul>` with `<li>` children.
-	- Ordered: lines starting with `1. `, `2. ` produce an `<ol>`.
-
-- Code fences:
-	- Standard triple backticks: ```` ```js\nconsole.log(1)\n``` ```` produces a `<pre><code>` block. Language (optional) is set as `language-<lang>` on the `<code>` element.
-
+- `/page <type> <label>` — create a new page. `type` may be: `equipment`, `gameplay`, `info`, `lore`, `species`, `talent`, `toc`, or `advanced`. `label` becomes the page number or label text.
+- `/columns <N>` — set columns for the current page (overrides default passed to `parse`).
+- `/column` or `/col` — advance to the next column on the active page.
+- `/spacing <px>` or `/sp <px>` — insert vertical spacing (pixels).
+- `/page-num <N>` — insert a page-number element (formatted as 3 digits).
+- `/page-break` — insert a `.page-break` marker element.
+- `/style begin` ... `/style end` — collect lines and inject a `<style>` element into the returned document (parser sanitizes `<` and `>` from the collected text).
+- `/img <src> [alt and attribute block]` — insert an image; you can append an attribute block (see below).
+- `/note <text>` (aliases `/info`, `/lore`) ... `/end` — create a decorative note box with paragraph content inside.
+- `/equipment <rarity> <name>` ... `/next` `/end` — create an equipment block with detail sub-commands: `/type`, `/cost`, `/tag`, `/damage`, `/desc`, `/flavor`, `/craft`.
+- `/toc begin` ... `/toc end` — create a table-of-contents block; lines inside are parsed like `Title | Page`.
+- Headings: `#`, `##`, `###` — standard Markdown-style headings; you can append an attribute block.
+- Lists: `- ` or `* ` — unordered lists; `1. ` etc — ordered lists.
+- Code fences: triple backticks produce `<pre><code>` blocks; optional language is added as a class on `<code>`.
 - Horizontal rule: `---` or `/hr` creates an `<hr>`.
+
+All user content is HTML-escaped before inline formatting is applied (bold, italic, links) to avoid injection.
 
 ## Attribute block syntax
 
-Append `{...}` to the end of a heading or paragraph (or many single-line commands) to add classes, id, style, or a span number. The syntax is flexible:
+Append an attribute block `{...}` to headings, paragraphs, or many single-line commands to add classes, id, inline styles, or a `span-N` directive used by some layout elements.
 
 Examples:
 
@@ -117,15 +99,13 @@ Supported tokens inside `{}`:
 - `style="..."` — set inline style attribute
 - `span-N` — sets the span value (useful for headings that should span columns)
 
-The parser returns an object that will apply these attributes to the created element.
-
 ## Inline formatting
 
 - Bold: `**bold**` → `<strong>`
 - Italic: `*italic*` → `<em>`
 - Links: `[text](url)` → `<a href="url">text</a>`
 
-All inline text is HTML-escaped before formatting to protect against injection.
+The parser escapes HTML before processing inline tokens to keep rendered output safe.
 
 ## Examples
 
@@ -139,7 +119,7 @@ This is a **bold** and *italic* paragraph.
 - bullet b
 ```
 
-Equipment block:
+Equipment block example:
 
 ```
 /equipment rare Fine Blade
@@ -168,3 +148,19 @@ Run them with:
 ```pwsh
 npm test
 ```
+
+## Developer notes
+
+- The editor disposes Monaco and disconnects observers on component unmount to avoid leaks.
+- Preview scaling is computed in `Editor.vue` (function `updateScale()` or similar) to preserve pixel font sizes while fitting the viewer.
+- Export pipeline uses `dom-to-image-more` (prefers `toBlob`) and `JSZip` + `FileSaver` to create a ZIP of PNG pages.
+- If you add new templates or toolbar items in `Editor.vue`, update the corresponding insertion handlers so templates are inserted at the editor cursor.
+
+## Contributing / Running locally
+
+1. npm install
+2. npm run serve
+3. Open the app in your browser, edit markup in the left pane, and preview updates on the right.
+4. Use the Export button to create a ZIP of page PNGs.
+
+If anything in this README appears out of sync with the code, please update the appropriate files in `src/components` and the tests in `tests/`.
