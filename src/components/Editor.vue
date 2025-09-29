@@ -71,6 +71,9 @@
           <div class="control" style="width: 300px; text-align: right; color: #f39c12;" v-if="warningText">
             <i class="ra ra-exclamation-triangle"></i> {{ warningText }}
           </div>
+          <div class="control">
+            <input class="username-input" type="text" placeholder="username" v-model="username" />
+          </div>
         </div>
       </div>
 
@@ -112,6 +115,8 @@ export default {
 
       isSaving: false,
       warningText: '',
+
+      username: '',
     };
   },
 
@@ -178,6 +183,19 @@ export default {
             break;
         }
       });
+
+      this.$watch('username', () => {
+        // update username displays on all pages
+        const viewer = this.$refs.viewerContainer;
+        if (viewer) {
+          for (const page of viewer.querySelectorAll('.page')) {
+            const usernameDisplay = page.querySelector('.username-display');
+            if (usernameDisplay) {
+              usernameDisplay.textContent = 'Authored by: ' + (document.querySelector('.username-input') ? document.querySelector('.username-input').value.trim() : '');
+            }
+          }
+        }
+      });
     });
   },
 
@@ -207,6 +225,19 @@ export default {
   },
 
   methods: {
+
+    updateUsernameDisplays() {
+      const viewer = this.$refs.viewerContainer;
+      if (viewer) {
+        for (const page of viewer.querySelectorAll('.page')) {
+          const usernameDisplay = page.querySelector('.username-display');
+          if (usernameDisplay) {
+            usernameDisplay.textContent = 'Authored by: ' + (document.querySelector('.username-input') ? document.querySelector('.username-input').value.trim() : '');
+          }
+        }
+      }
+    },
+
     onItemDropdownSelect(event) {
       console.log('Item dropdown changed:', event);
       if (event.target.value === "sample_javelin") {
@@ -522,6 +553,13 @@ export default {
           const parsedContent = parse(content, this.columnCount);
           viewer.appendChild(parsedContent);
           viewerContainer.appendChild(viewer);
+
+          for (const page of viewer.querySelectorAll('.page')) {
+            const usernameDisplay = document.createElement('div');
+            usernameDisplay.className = 'username-display';
+            usernameDisplay.textContent = 'Authored by: ' + (document.querySelector('.username-input') ? document.querySelector('.username-input').value.trim() : '');
+            page.appendChild(usernameDisplay);
+          }
 
           // compute scaling to fit the viewer area while preserving pixel font sizes
           this.updateScale();
@@ -975,6 +1013,10 @@ export default {
   width: 80px;
 }
 
+.username-input {
+  width: 160px;
+}
+
 .btn {
   appearance: none;
   border: 0;
@@ -1025,6 +1067,45 @@ export default {
   min-height: var(--doc-height, 1650px);
   max-height: var(--doc-height, 1650px);
   position: relative;
+}
+
+.page::before {
+  content: "";
+  position: absolute;
+  top: 60px;
+  left: 60px;
+  right: 60px;
+  bottom: 58px;
+  border-left: 12px solid #ff000042;
+  border-right: 12px solid #ff000042;
+  border-top: 12px solid #ff000042;
+}
+
+.page-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-60deg);
+  opacity: 0.05;
+  font-size: 320px;
+  font-family: "Rockwell Nova Condensed";
+  font-weight: bold;
+  color: #ff0000;
+  pointer-events: none;
+  user-select: none;
+  z-index: 1;
+}
+
+.username-display {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 20px;
+  font-size: 18px;
+  font-family: "Bahnschrift";
+  color: #ff0000;
+  z-index: 5;
+  text-align: center;
 }
 
 .page.page-equipment {

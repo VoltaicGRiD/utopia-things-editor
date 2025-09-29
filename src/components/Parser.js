@@ -81,6 +81,12 @@ export function parse(input, columnCount = 1) {
     blockEnd: /^\/end$/i,
     toc: /^\/toc\s+(begin|end)$/i,
     heading: /^(#+)\s+(.*)$/, 
+
+    // Talent handling
+    talentStart: /^\/tree$/i,
+    talentJson: /^{\s*"name":\s*"(.*?)",\s*"description":\s*"(.*?)",\s*"prerequisites":\s*\[(.*?)\],\s*"effects":\s*\[(.*?)\]\s*}$/i,
+    talentEnd: /^\/end-tree$/i,
+
     // style blocks
     styleBegin: /^\/style\s+begin$/i,
     styleEnd: /^\/style\s+end$/i,
@@ -135,6 +141,8 @@ export function parse(input, columnCount = 1) {
     page.querySelector('.page-content').appendChild(firstCol);
     pageColumns[activePageIndex].push(firstCol);
     activeColumnIndex = 0;
+    const watermark = createEl('div', 'page-watermark', "HOMEBREW");
+    activePage.appendChild(watermark);
     if (pageLabel) {
       const pageDiv = createEl('div', 'page-number');
       if (/^\d+$/.test(pageLabel)) {
