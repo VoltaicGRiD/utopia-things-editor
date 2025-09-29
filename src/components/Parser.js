@@ -243,20 +243,25 @@ export function parse(input, columnCount = 1) {
   };
 
   const endSpell = () => {
-    const section = spellDiv.querySelector('.section-2');
-    const artistryCount = spellArtistries.length;
-    const container = createEl('div', 'artistry-container artistry-container-' + artistryCount, '');
-    section.appendChild(container);
-    for (const artistry of spellArtistries) {
-      const artistryIcon = createEl('img', `artistry-icon artistry-${artistry}`, '')
-      artistryIcon.setAttribute('width', '130');
-      artistryIcon.setAttribute('height', '130');
-      container.appendChild(artistryIcon);
-    } 
+      try {
+      const section = spellDiv.querySelector('.section-2');
+      const artistryCount = spellArtistries.length;
+      const container = createEl('div', 'artistry-container artistry-container-' + artistryCount, '');
+      section.appendChild(container);
 
-    spellDiv = null;
-    spellSectionContainer = null;
-    spellSectionCount = 0;
+      for (const artistry of spellArtistries) {
+        const artistryIcon = createEl('img', `artistry-icon artistry-${artistry}`, '')
+        artistryIcon.setAttribute('width', '130');
+        artistryIcon.setAttribute('height', '130');
+        container.appendChild(artistryIcon);
+      } 
+
+      spellDiv = null;
+      spellSectionContainer = null;
+      spellSectionCount = 0;
+    } catch (e) {
+      console.error('Error finalizing spell:', e);
+    }
   };
 
   const startNote = (type, firstLine) => {
