@@ -1803,6 +1803,7 @@ export default {
 
 .specialist-cell {
   font-size: 19.5px;
+  font-family: "Bahnschrift";
 }
 
 .specialist-cell.cell-1 {
