@@ -3,15 +3,15 @@
 
     <div class="editor-container">
       <div class="editor-toolbar">
-        <div class="toolbar-left">
-          <div class="control">
+        <!-- <div class="toolbar-left"> -->
+          <!-- <div class="control">
             <label class="control-label">Type</label>
             <select v-model="documentType" class="control-select">
               <option value="info">Info</option>
               <option value="lore">Lore</option>
             </select>
-          </div>
-
+          </div> -->
+<!-- 
           <div class="control">
             <label class="control-label">Columns</label>
             <select v-model="columnCount" class="control-select">
@@ -19,10 +19,25 @@
               <option value="2">2</option>
               <option value="3">3</option>
             </select>
-          </div>
-        </div>
+          </div> -->
 
-        <div class="toolbar-center">
+          <!-- <div class="control compact">
+            <label class="control-label">DPI</label>
+            <input class="control-input" type="number" min="72" max="600" step="1" v-model.number="dpi" aria-label="Document DPI" />
+          </div>
+
+          <div class="control compact">
+            <label class="control-label">Width (px)</label>
+            <input class="control-input" type="number" min="640" max="2048" step="1" v-model.number="docWidth" aria-label="Document width" />
+          </div>
+
+          <div class="control compact">
+            <label class="control-label">Height (px)</label>
+            <input class="control-input" type="number" min="900" max="2800" step="1" v-model.number="docHeight" aria-label="Document height" />
+          </div> -->
+        <!-- </div> -->
+
+        <div class="toolbar-left">
           <div class="control">
             <button class="btn secondary" @click="loadState">Load</button>
           </div>
@@ -44,19 +59,21 @@
         <div class="toolbar-left">
           <div class="control">
             <label class="control-label"><i class="ra ra-hammer"></i> Insert Item</label>
-            <select @change="onItemDropdownSelect" class="control-select">
-              <option disabled selected value="">Select Item Type...</option>
+            <select v-model="selectedItemType" @change="onItemDropdownSelect" class="control-select">
+              <option disabled value="">Select Item Type...</option>
               <option value="equipment">Blank Equipment Template</option>
               <option value="sample_javelin">Sample: "JAVELIN OF THE SKIES"</option>
               <option value="sample_specialist_table">Sample: Specialist Talent Table</option>
               <option value="sample_spell">Sample: Spell Template</option>
+              <option value="sample_species_profile">Sample: Species Profile</option>
+              <option value="sample_lore_excerpt">Sample: Lore Excerpt</option>
             </select>
           </div>
 
           <div class="control">
             <label class="control-label"><i class="ra ra-book"></i> Insert Page</label>
-            <select @change="onPageDropdownSelect" class="control-select">
-              <option disabled selected value="">Select Page Type...</option>
+            <select v-model="selectedPageType" @change="onPageDropdownSelect" class="control-select">
+              <option disabled value="">Select Page Type...</option>
               <option value="info">Info Page</option>
               <option value="lore">Lore Page</option>
               <option value="gameplay">Gameplay Page</option>
@@ -66,6 +83,17 @@
               <option value="advanced">Advanced Page</option>
             </select>
           </div>
+
+          <!-- <div class="control">
+            <label class="control-label"><i class="ra ra-gear-hammer"></i> Insert Snippet</label>
+            <select v-model="selectedSnippet" @change="onSnippetDropdownSelect" class="control-select">
+              <option disabled value="">Select Snippet...</option>
+              <option value="note-callout">Note Callout Block</option>
+              <option value="two-column-quote">Two-Column Quote</option>
+              <option value="lore-facts">Lore Fact List</option>
+              <option value="stat-block">Quick Stat Block</option>
+            </select>
+          </div> -->
         </div>
 
         <div class="toolbar-right">
@@ -74,6 +102,44 @@
           </div>
           <div class="control">
             <input class="username-input" type="text" placeholder="username" v-model="username" />
+          </div>
+          <div class="control">
+            <button class="btn secondary" @click="loadSampleDocument('starter-pack')">Load Starter Packet</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="editor-toolbar toolbar-advanced">
+        <div class="toolbar-left">
+          <div class="control compact">
+            <label class="control-label">Header (pt)</label>
+            <input class="control-input" type="number" min="16" max="96" step="1" v-model.number="headerFontPt" aria-label="Header font size in points" />
+          </div>
+          <div class="control compact">
+            <label class="control-label">Subheader (pt)</label>
+            <input class="control-input" type="number" min="14" max="72" step="1" v-model.number="subheaderFontPt" aria-label="Subheader font size in points" />
+          </div>
+          <div class="control compact">
+            <label class="control-label">Body (pt)</label>
+            <input class="control-input" type="number" min="8" max="48" step="0.5" v-model.number="bodyFontPt" aria-label="Body font size in points" />
+          </div>
+        </div>
+
+        <div class="toolbar-right">
+          <!-- <div class="control checkbox-control">
+            <label>
+              <input type="checkbox" v-model="showUsername" />
+              <span>Show author credit</span>
+            </label>
+          </div> -->
+          <div class="control checkbox-control">
+            <label>
+              <input type="checkbox" v-model="showGridOverlay" />
+              <span>Layout grid</span>
+            </label>
+          </div>
+          <div class="control">
+            <button class="btn secondary" @click="resetLayoutDefaults">Reset Layout</button>
           </div>
         </div>
       </div>
@@ -119,6 +185,22 @@ export default {
       warningText: '',
 
       username: '',
+
+      selectedItemType: '',
+      selectedPageType: '',
+      selectedSnippet: '',
+
+      showGridOverlay: false,
+      showUsername: true,
+
+      layoutDefaults: {
+        width: 1275,
+        height: 1650,
+        dpi: 150,
+        headerPt: 28,
+        subheaderPt: 24,
+        bodyPt: 12
+      }
     };
   },
 
@@ -159,15 +241,12 @@ export default {
       }
 
       this.$watch('documentType', () => {
-        // If a document root already exists, update its background so it
-        // stays aligned with the document content. Otherwise header color
-        // will be applied when the document is next rendered.
         const viewerContent = this.$refs.viewerContainer && this.$refs.viewerContainer.querySelector('.viewer-content');
 
         switch (this.documentType) {
           case 'info':
             if (viewerContent) {
-              viewerContent.style.backgroundImage = "url('../assets/documents/info-sheet.png')";
+              viewerContent.style.backgroundImage = "url('../assets/documents/blue-page.png')";
               viewerContent.style.backgroundSize = '100% 100%';
               viewerContent.style.backgroundRepeat = 'no-repeat';
               viewerContent.style.backgroundPosition = 'top left';
@@ -184,6 +263,7 @@ export default {
             if (this.$refs.viewerContainer) this.$refs.viewerContainer.style.setProperty('--header-color', '#8349a4');
             break;
         }
+
       });
 
       this.$watch('username', () => {
@@ -323,8 +403,103 @@ export default {
           ].join('\n')
         })
       }
+      else if (event.target.value === "sample_species_profile") {
+        this.onInsertSelect({
+          value: [
+            "/page species 1",
+            "# {Species Profile}",
+            "/spacing 24",
+            "## The Verdant", 
+            "**Traits:** Graceful, Empathic, Photosynthetic",
+            "**Size:** Medium | **Speed:** 9 meters",
+            "- Gain favor on tests to sense plants or natural toxins",
+            "- Can photosynthesize to recover 1 stamina every 10 minutes in bright light",
+            "- Suffers disadvantage on perception tests taken underground",
+            "/spacing 18",
+            "### Culture",
+            "The Verdant are a communal people who weave living architecture. Their homes are coaxed from sturdy reeds and sung into shape over the course of weeks.",
+            "/spacing 18",
+            "### Hooks",
+            "1. A Verdant elder asks the party to escort a migratory seed to fertile soil.",
+            "2. The settlement's water-garden is mysteriously blighted.",
+            "3. Rival wood-cutters have begun logging sacred groves.",
+            "/end"
+          ].join('\n')
+        });
+      }
+      else if (event.target.value === "sample_lore_excerpt") {
+        this.onInsertSelect({
+          value: [
+            "/page lore 2",
+            "# Excerpt from the Journal of Arcanist Vela",
+            "The stormglass hums louder each night. Waves of color press against the panes, forming sigils I almost comprehend.",
+            "/spacing 12",
+            "> \"If the prism fractures, the Wake will spill unchecked through the streets.\"",
+            "/spacing 12",
+            "## Field Notes",
+            "- The Wake resonates with bronze alloys, not silver.",
+            "- Divination artistries lose potency within seven kilometers of the lighthouse.",
+            "- Enchantment weaves linger longer where the Wake is thickest.",
+            "/spacing 12",
+            "### Closing",
+            "Tomorrow we open the sluice gates and see if the tide will listen.",
+            "/end"
+          ].join('\n')
+        });
+      }
       // Reset dropdown after insert
       this.selectedItemType = "";
+    },
+
+    onSnippetDropdownSelect(event) {
+      const snippetKey = event && event.target ? event.target.value : '';
+      if (!snippetKey) {
+        return;
+      }
+
+      const snippets = {
+        'note-callout': [
+          '/note info Readying for Expedition',
+          'Pack climbing rigging, one spare wake-stone, and at least two doses of nighthoney.',
+          '/end'
+        ],
+        'two-column-quote': [
+          '/col',
+          '### Scholar\'s Margin',
+          'The Wake trends strongest near ley convergence sites.',
+          '/col',
+          '> \"Measure the silence before you measure the sound.\"\n> — Archivist Rhys',
+          '/col'
+        ],
+        'lore-facts': [
+          '### Lore Fragments',
+          '- Wake currents flow quickest beneath vaulted ceilings.',
+          '- Necromancy glyphs dim in the presence of auric stones.',
+          '- Evocation prisms ring like crystal when overstressed.'
+        ],
+        'stat-block': [
+          '/page gameplay 3',
+          '### Clockwork Sentry',
+          '**Level:** 5 | **Disposition:** Guarded',
+          '**Traits:** Construct, Vigilant, Heavy',
+          '/spacing 8',
+          '**Motive:** Protect the sealed vault',
+          '**Vitality:** 46 | **Guard:** 18 | **Resolve:** 12',
+          '/spacing 12',
+          '**Attacks:**',
+          '- Arm Pike — +8 vs Guard, 2d8 Piercing + Push 1',
+          '- Wake Pulse — +6 vs Resolve, 2d6 Radiant, target is **Dazed**',
+          '/spacing 12',
+          '**Protocol:** Gains favor on tests while within 5 meters of a control node.'
+        ]
+      };
+
+      const snippet = snippets[snippetKey];
+      if (snippet) {
+        this.onInsertSelect({ value: snippet.join('\n') });
+      }
+
+      this.selectedSnippet = '';
     },
 
     onPageDropdownSelect(event) {
@@ -343,6 +518,82 @@ export default {
     onPageButtonClick(type) {
       this.selectedPageType = type;
       this.onPageDropdownSelect();
+    },
+
+    loadSampleDocument(kind) {
+      if (!this._monacoEditor) return;
+
+      const samples = {
+        'starter-pack': [
+          '/page blue 1',
+          '# Welcome to Things',
+          'The **Things Editor** lets you rapidly build printable sheets.',
+          '/spacing 16',
+          '## Getting Started',
+          'Use `/page <color> <number>` to start each sheet.',
+          'Swap columns with `/col`.',
+          'Close blocks like `/note` or `/equipment` with `/end`.',
+          '/spacing 18',
+          '### Quick Legend',
+          '**Bold** items call attention to important rules.',
+          '*Italics* mark optional flavor text.',
+          'Links like [Myramyth Website](https://myramyth.com/utopia) are allowed (though they won\'t work when exported).',
+          '/spacing 24',
+          '/note **Handy Commands**',
+          'Try `/lore` for purple callouts or `/toc begin` to build a table of contents.',
+          '/end',
+          '/page blue 2',
+          '# Sample Lore Spread',
+          '/spacing 12',
+          '### The Singing Wake',
+          'Every sixty years the Wake changes pitch, harmonizing with previously silent ruins.',
+          '/spacing 12',
+          '/col',
+          '/spacing -30',
+          '#### Rumors',
+          'Hidden choirs beneath the city keep the Wake docile.',
+          'The royal archivist hoards broken wake-stones.',
+          'Free-tide sailors can hear storms days in advance.',
+          '/spacing 12',
+          '#### Adventure Seeds',
+          'Hunt a missing conductor before the Wake resonance fails.',
+          'Protect a caravan bringing new tuning forks to the capital.',
+          'Sabotage rival enchantments that disrupt the city\'s rhythm.',
+          '/page yellow 3',
+          '# Encounter Sketch',
+          '### Gilded Promenade',
+          'The promenade is split across three balconies connected by floating stairs.',
+          '/spacing 12',
+          '#### Features',
+          'Crystal balustrades grant cover but shatter when struck (Guard 14).',
+          'Wake vents blast upward each round, relocating anyone nearby.',
+          'Two control obelisks tune the promenade. Both must be struck within the same round to disable the vents.',
+          '/spacing 12',
+          '#### Tactics',
+          '**Clockwork Sentries** hold the high ground.',
+          '**Wake Adepts** attempt to knock foes into the vents.',
+          'The promenade guardian arrives at round 4 if the obelisks remain active.'
+        ].join('\n')
+      };
+
+      const sample = samples[kind];
+      if (!sample) {
+        return;
+      }
+
+      let shouldReplace = !this._monacoEditor.getValue();
+      if (!shouldReplace) {
+        const canConfirm = typeof window !== 'undefined' && typeof window.confirm === 'function';
+        shouldReplace = canConfirm ? window.confirm('Replace the current document with the starter packet?') : true;
+      }
+      if (!shouldReplace) {
+        return;
+      }
+
+      this._monacoEditor.setValue(sample);
+      this.selectedItemType = '';
+      this.selectedPageType = '';
+      this.selectedSnippet = '';
     },
 
     loadState() {
@@ -410,7 +661,7 @@ export default {
 
             tokenizer: {
               root: [
-                // commands that start a line: /page, /column, /note, /end, /spacing, /page-num
+                // commands that start a line: /page, /col, /note, /end, /spacing, /page-num
                 [/^\/(page|column|note|info|lore|end|spacing|page-num|advanced|toc)\b/i, 'utopia.command'],
                 // page types used with /page commands (case-insensitive)
                 [/(equipment|gameplay|info|lore|species|talent|toc|advanced)\b/i, 'utopia.pagetype'],
@@ -529,7 +780,7 @@ export default {
 
           // const documentImage = document.createElement('img');
           // documentImage.classList.add('document-image');
-          // documentImage.src = this.documentType === 'info' ? '../assets/documents/info-sheet.png' : '../assets/documents/lore-sheet.png';
+          // documentImage.src = this.documentType === 'info' ? '../assets/documents/blue-page.png' : '../assets/documents/lore-sheet.png';
           // viewer.appendChild(documentImage);
 
           // set font-size vars so styles are pixel-accurate
@@ -538,29 +789,42 @@ export default {
           viewer.style.setProperty('--body-font-px', this.bodyFontPx + 'px');
           viewer.style.setProperty('--doc-height', this.docHeight + 'px');
           viewer.style.setProperty('--doc-width', this.docWidth + 'px');
-          //viewer.style.setProperty('--page-background', this.documentType === 'info' ? "url('../assets/documents/info-sheet.png')" : "url('../assets/documents/lore-sheet.png')");
+          //viewer.style.setProperty('--page-background', this.documentType === 'info' ? "url('../assets/documents/blue-page.png')" : "url('../assets/documents/lore-sheet.png')");
           // set background image on the document root so it remains aligned
           // with the content when scaled and when the window resizes
-          if (this.documentType === 'info') {
-            //viewer.style.backgroundImage = "url('../assets/documents/info-sheet.png')";
-            viewer.style.setProperty('--header-color', '#0067a9');
-          } else {
-            //viewer.style.backgroundImage = "url('../assets/documents/lore-sheet.png')";
-            viewer.style.setProperty('--header-color', '#8349a4');
-          }
+          const themeBackgrounds = {
+            info: "url('../assets/documents/blue-page.png')",
+            lore: "url('../assets/documents/lore-sheet.png')"
+          };
+          const themeColors = {
+            info: '#0067a9',
+            lore: '#8349a4'
+          };
+
+          const backgroundImage = themeBackgrounds[this.documentType] || themeBackgrounds.info;
+          const headerColor = themeColors[this.documentType] || themeColors.info;
+
+          viewer.style.backgroundImage = backgroundImage;
+          viewer.style.setProperty('--header-color', headerColor);
           viewer.style.backgroundSize = '100% 100%';
           viewer.style.backgroundRepeat = 'no-repeat';
           viewer.style.backgroundPosition = 'top left';
+
+          if (this.showGridOverlay) {
+            viewer.classList.add('viewer-grid');
+          }
 
           const parsedContent = parse(content, this.columnCount);
           viewer.appendChild(parsedContent);
           viewerContainer.appendChild(viewer);
 
-          for (const page of viewer.querySelectorAll('.page')) {
-            const usernameDisplay = document.createElement('div');
-            usernameDisplay.className = 'username-display';
-            usernameDisplay.textContent = 'Authored by: ' + (document.querySelector('.username-input') ? document.querySelector('.username-input').value.trim() : '');
-            page.appendChild(usernameDisplay);
+          if (this.showUsername) {
+            for (const page of viewer.querySelectorAll('.page')) {
+              const usernameDisplay = document.createElement('div');
+              usernameDisplay.className = 'username-display';
+              usernameDisplay.textContent = 'Authored by: ' + (document.querySelector('.username-input') ? document.querySelector('.username-input').value.trim() : '');
+              page.appendChild(usernameDisplay);
+            }
           }
 
           // compute scaling to fit the viewer area while preserving pixel font sizes
@@ -613,6 +877,10 @@ export default {
           this.bodyFontPx = this.ptToPx(this.bodyFontPt, this.dpi);
           this.updateVars();
         });
+
+        this.$watch('documentType', () => renderMarkdown());
+        this.$watch('showUsername', () => renderMarkdown());
+        this.$watch('showGridOverlay', () => renderMarkdown());
 
         // Resize observer to recompute scale when viewer size changes
         if (window.ResizeObserver) {
@@ -1086,6 +1354,16 @@ export default {
       return chunks;
     },
 
+    resetLayoutDefaults() {
+      if (!this.layoutDefaults) return;
+      this.docWidth = this.layoutDefaults.width;
+      this.docHeight = this.layoutDefaults.height;
+      this.dpi = this.layoutDefaults.dpi;
+      this.headerFontPt = this.layoutDefaults.headerPt;
+      this.subheaderFontPt = this.layoutDefaults.subheaderPt;
+      this.bodyFontPt = this.layoutDefaults.bodyPt;
+    },
+
     updateScale() {
       this.$nextTick(() => {
         const viewerContainer = this.$refs.viewerContainer;
@@ -1155,7 +1433,7 @@ export default {
   /* how far left from origin */
   --line-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
 
-  --info-background: url('@/assets/documents/info-sheet.png');
+  --info-background: url('@/assets/documents/blue-page.png');
   --lore-background: url('@/assets/documents/lore-sheet.png');
   --equipment-background: url('@/assets/documents/equipment-sheet.png');
   --species-background: url('@/assets/documents/species-sheet.png');
@@ -1316,6 +1594,11 @@ export default {
   gap: 10px;
 }
 
+.editor-toolbar.toolbar-advanced {
+  align-items: center;
+  justify-content: space-between;
+}
+
 .control {
   display: flex;
   flex-direction: column;
@@ -1326,6 +1609,25 @@ export default {
 .control.compact {
   flex-direction: row;
   align-items: center;
+}
+
+.control.checkbox-control {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.control.checkbox-control label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.control.checkbox-control input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
 }
 
 .control-label {
@@ -1393,6 +1695,22 @@ export default {
   background-origin: padding-box;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   border-radius: 6px;
+  position: relative;
+}
+
+.viewer-content.viewer-grid::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.12) 1px, transparent 1px),
+    linear-gradient(rgba(0, 0, 0, 0.2) 4px, transparent 4px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2) 4px, transparent 4px);
+  background-size: 48px 48px, 48px 48px, 240px 240px, 240px 240px;
+  opacity: 0.25;
+  mix-blend-mode: multiply;
 }
 
 .page {
@@ -1566,6 +1884,15 @@ export default {
   font-size: var(--subheader-font-px, 24pt);
   line-height: 1.15;
   margin: 38px 0 -5px;
+}
+
+.page h4 {
+  color: var(--header-color, #573084);
+  font-family: "Rockwell Nova Condensed";
+  font-weight: bold;
+  font-size: 46px;
+  line-height: 1.15;
+  margin: 28px 0 -5px;
 }
 
 .page p {

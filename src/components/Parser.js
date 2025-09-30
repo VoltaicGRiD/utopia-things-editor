@@ -71,7 +71,7 @@ export function parse(input, columnCount = 1) {
     page: /^\/page\s+(red|pink|orange|yellow|purple|green|blue|talent)\s+(.+)$/i,
     pageNum: /^\/page-num\s+(\d+)$/i,
     column: /^\/(column|col)$/i,
-    spacing: /^\/(spacing|sp)\s+(\d+)$/i,
+  spacing: /^\/(spacing|sp)\s+(-?\d+)$/i,
     equipment: /^\/equipment\s+(crude|common|uncommon|rare|legendary|mythic)\s+(.*)$/i,
     equipmentDetail: /^\/(type|cost|tag|damage|desc|flavor|craft)\s+(.*)$/i,
     equipmentNext: /^\/next$/i,
@@ -398,8 +398,18 @@ export function parse(input, columnCount = 1) {
   };
 
   const addSpacing = (px) => {
+    const amount = parseFloat(px);
+    if (!Number.isFinite(amount)) return;
+
     const spacer = createEl('div', 'spacing');
-    spacer.style.height = px + 'px';
+    if (amount >= 0) {
+      spacer.style.height = amount + 'px';
+    } else {
+      spacer.style.height = '0px';
+      spacer.style.marginTop = amount + 'px';
+      spacer.classList.add('spacing-negative');
+    }
+    spacer.setAttribute('aria-hidden', 'true');
     getActiveColumn().appendChild(spacer);
   };
 
