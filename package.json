@@ -17,6 +17,7 @@
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "jszip": "^3.10.1",
+  "pdf-lib": "^1.17.1",
     "marked": "^16.2.1",
     "monaco-editor": "^0.52.2",
     "vue": "^3.2.13"
@@ -31,6 +32,9 @@
     "testEnvironment": "jsdom",
     "transform": {
       "^.+\\.js$": "babel-jest"
+    },
+    "moduleNameMapper": {
+      "\\.(css|less|scss|sass)$": "<rootDir>/tests/__mocks__/styleMock.js"
     }
   },
   "eslintConfig": {

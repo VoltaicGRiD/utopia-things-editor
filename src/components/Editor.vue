@@ -35,7 +35,8 @@
           <div class="control" style="width: 150px;">
             <span class="save-timer" v-if="isSaving">Auto-saving...</span>
           </div>
-          <button class="btn primary" @click="exportImage">Export</button>
+          <!-- <button class="btn secondary" @click="exportPdf">Export PDF</button> -->
+          <button class="btn primary" @click="exportImage">Export Images</button>
         </div>
       </div>
 
@@ -91,6 +92,7 @@ import { parse } from './Parser';
 import domtoimage from 'dom-to-image-more';
 import JSZip from 'jszip';
 import * as FileSaver from 'file-saver';
+import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 //import CustomDropdown from './CustomDropdown.vue';
 
 export default {
@@ -191,7 +193,7 @@ export default {
           for (const page of viewer.querySelectorAll('.page')) {
             const usernameDisplay = page.querySelector('.username-display');
             if (usernameDisplay) {
-              usernameDisplay.textContent = 'Authored by: ' + (document.querySelector('.username-input') ? document.querySelector('.username-input').value.trim() : '');
+              usernameDisplay.textContent = (document.querySelector('.username-input') ? document.querySelector('.username-input').value.trim() : '');
             }
           }
         }
@@ -760,6 +762,330 @@ export default {
       }
     },
 
+    exportPdf: async function () {
+      const viewerContainer = this.$refs.viewerContainer;
+      if (!viewerContainer) return;
+
+      const pages = Array.from(viewerContainer.querySelectorAll('.page'));
+      if (pages.length === 0) {
+        console.warn('No pages found to export.');
+        alert('No pages found to export.');
+        return;
+      }
+
+      try {
+        const pdfDoc = await PDFDocument.create();
+        const fonts = {
+          regular: await pdfDoc.embedFont(StandardFonts.Helvetica),
+          bold: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
+          italic: await pdfDoc.embedFont(StandardFonts.HelveticaOblique),
+          boldItalic: await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique)
+        };
+
+        const pageWidthPt = this.pxToPt(this.docWidth, this.dpi);
+        const pageHeightPt = this.pxToPt(this.docHeight, this.dpi);
+
+        for (let i = 0; i < pages.length; i++) {
+          const pageElement = pages[i];
+          const pdfPage = pdfDoc.addPage([pageWidthPt, pageHeightPt]);
+
+          // capture the rendered page as an image for backgrounds and artwork
+          try {
+            const dataUrl = await domtoimage.toPng(pageElement);
+            const pngImage = await pdfDoc.embedPng(dataUrl);
+            pdfPage.drawImage(pngImage, {
+              x: 0,
+              y: 0,
+              width: pageWidthPt,
+              height: pageHeightPt,
+              opacity: 0.35
+            });
+          } catch (imgErr) {
+            console.warn(`Unable to capture background for page ${i + 1}:`, imgErr);
+          }
+
+          const pageRect = pageElement.getBoundingClientRect();
+          const scale = pageRect.width > 0 ? pageRect.width / this.docWidth : 1;
+          const textBlocks = this._collectTextBlocks(pageElement);
+
+          for (const element of textBlocks) {
+            const computed = window.getComputedStyle(element);
+            if (computed.display === 'none' || computed.visibility === 'hidden') {
+              continue;
+            }
+
+            const normalizedText = this._normalizeTextContent(element.innerText);
+            if (!normalizedText) continue;
+
+            const elementRect = element.getBoundingClientRect();
+            const paddingLeft = parseFloat(computed.paddingLeft) || 0;
+            const paddingRight = parseFloat(computed.paddingRight) || 0;
+            const paddingTop = parseFloat(computed.paddingTop) || 0;
+
+            const widthPx = Math.max(0, (elementRect.width / scale) - paddingLeft - paddingRight);
+            if (widthPx <= 0) continue;
+
+            const xPx = (elementRect.left - pageRect.left) / scale + paddingLeft;
+            const yTopPx = (elementRect.top - pageRect.top) / scale + paddingTop;
+
+            const fontSizePx = parseFloat(computed.fontSize) || this.bodyFontPx;
+            const lineHeightPx = computed.lineHeight === 'normal'
+              ? fontSizePx * 1.2
+              : parseFloat(computed.lineHeight) || fontSizePx * 1.2;
+
+            const fontSizePt = this.pxToPt(fontSizePx, this.dpi);
+            const lineHeightPt = this.pxToPt(lineHeightPx, this.dpi);
+            const maxWidthPt = this.pxToPt(widthPx, this.dpi);
+
+            const font = this._resolveFont(computed, fonts);
+            const { color, opacity } = this._cssColorToRgb(computed.color, parseFloat(computed.opacity));
+
+            const lines = this._wrapTextIntoLines(font, normalizedText, fontSizePt, maxWidthPt);
+            if (!lines.length) continue;
+
+            let cursorY = pageHeightPt - this.pxToPt(yTopPx, this.dpi) - fontSizePt;
+            const align = computed.textAlign || 'left';
+
+            for (const line of lines) {
+              const lineWidth = font.widthOfTextAtSize(line, fontSizePt);
+              let lineX = this.pxToPt(xPx, this.dpi);
+
+              if (align === 'center') {
+                lineX += Math.max(0, (maxWidthPt - lineWidth) / 2);
+              } else if (align === 'right') {
+                lineX += Math.max(0, maxWidthPt - lineWidth);
+              }
+
+              pdfPage.drawText(line, {
+                x: lineX,
+                y: cursorY,
+                size: fontSizePt,
+                font,
+                color,
+                opacity
+              });
+              cursorY -= lineHeightPt;
+              if (cursorY < -pageHeightPt) {
+                break;
+              }
+            }
+          }
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+
+        try {
+          FileSaver.saveAs(blob, 'document.pdf');
+        } catch (err) {
+          console.warn('FileSaver failed, falling back to anchor method:', err);
+          try {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'document.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 10000);
+          } catch (err2) {
+            console.error('Failed to trigger PDF download:', err2);
+            alert('Failed to export PDF. Check console for details.');
+          }
+        }
+      } catch (error) {
+        console.error('Error creating PDF:', error);
+        alert('Failed to export PDF. Check console for details.');
+      }
+    },
+
+    _collectTextBlocks(root) {
+      const blocks = [];
+      const visit = (element) => {
+        if (!(element instanceof HTMLElement)) return;
+        const tagName = element.tagName ? element.tagName.toLowerCase() : '';
+        if (tagName === 'script' || tagName === 'style') return;
+        if (element.classList.contains('page-watermark')) return;
+
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) {
+          return;
+        }
+
+        const children = Array.from(element.children).filter(child => {
+          const childStyle = window.getComputedStyle(child);
+          return childStyle.display !== 'none' && childStyle.visibility !== 'hidden' && parseFloat(childStyle.opacity) !== 0;
+        });
+
+        const hasBlockChild = children.some(child => {
+          const display = window.getComputedStyle(child).display;
+          return display !== 'inline' && display !== 'contents';
+        });
+
+        const hasTextNode = Array.from(element.childNodes).some(node => node.nodeType === Node.TEXT_NODE && node.textContent && node.textContent.trim().length > 0);
+
+        const display = style.display;
+        const isBlockLike = display !== 'inline' && display !== 'contents';
+
+        if (hasTextNode && isBlockLike && !hasBlockChild) {
+          blocks.push(element);
+        }
+
+        for (const child of children) {
+          visit(child);
+        }
+      };
+
+      visit(root);
+      return blocks;
+    },
+
+    _cssColorToRgb(colorString, opacity = 1) {
+      const normalizedOpacity = Number.isFinite(opacity) ? opacity : 1;
+      if (!colorString || typeof colorString !== 'string') {
+        return { color: rgb(0, 0, 0), opacity: Math.max(0, Math.min(1, normalizedOpacity)) };
+      }
+
+      const rgbaMatch = colorString.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/i);
+      if (rgbaMatch) {
+        const r = Math.min(255, parseInt(rgbaMatch[1], 10) || 0) / 255;
+        const g = Math.min(255, parseInt(rgbaMatch[2], 10) || 0) / 255;
+        const b = Math.min(255, parseInt(rgbaMatch[3], 10) || 0) / 255;
+        const a = rgbaMatch[4] !== undefined ? parseFloat(rgbaMatch[4]) : 1;
+        const finalOpacity = Number.isFinite(a) ? a * normalizedOpacity : normalizedOpacity;
+        return { color: rgb(r, g, b), opacity: Math.max(0, Math.min(1, finalOpacity)) };
+      }
+
+      const hexMatch = colorString.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+      if (hexMatch) {
+        let hex = hexMatch[1];
+        if (hex.length === 3) {
+          hex = hex.split('').map(ch => ch + ch).join('');
+        }
+        const intVal = parseInt(hex, 16);
+        const r = ((intVal >> 16) & 255) / 255;
+        const g = ((intVal >> 8) & 255) / 255;
+        const b = (intVal & 255) / 255;
+        return { color: rgb(r, g, b), opacity: Math.max(0, Math.min(1, normalizedOpacity)) };
+      }
+
+      return { color: rgb(0, 0, 0), opacity: Math.max(0, Math.min(1, normalizedOpacity)) };
+    },
+
+    _resolveFont(style, fonts) {
+      const weight = style.fontWeight;
+      const isBold = weight === 'bold' || weight === 'bolder' || (parseInt(weight, 10) || 0) >= 600;
+      const fontStyle = style.fontStyle;
+      const isItalic = fontStyle === 'italic' || fontStyle === 'oblique';
+
+      if (isBold && isItalic) return fonts.boldItalic;
+      if (isBold) return fonts.bold;
+      if (isItalic) return fonts.italic;
+      return fonts.regular;
+    },
+
+    _normalizeTextContent(text) {
+      if (!text || typeof text !== 'string') return '';
+      return text
+        .replace(/\u00A0/g, ' ')
+        .replace(/[\t\r]+/g, ' ')
+        .replace(/\s+\n/g, '\n')
+        .replace(/\n\s+/g, '\n')
+        .replace(/ +/g, ' ')
+        .trim();
+    },
+
+    _wrapTextIntoLines(font, text, fontSize, maxWidth) {
+      if (!text || typeof text !== 'string') return [];
+      if (!font || !Number.isFinite(fontSize) || fontSize <= 0) {
+        return text.split('\n');
+      }
+
+      if (!Number.isFinite(maxWidth) || maxWidth <= 0) {
+        return text.split('\n');
+      }
+
+      const lines = [];
+      const paragraphs = text.split('\n');
+
+      for (const paragraph of paragraphs) {
+        const trimmedParagraph = paragraph.trim();
+        if (!trimmedParagraph) {
+          lines.push('');
+          continue;
+        }
+
+        const words = trimmedParagraph.split(' ');
+        let currentLine = '';
+
+        for (const rawWord of words) {
+          const word = rawWord.trim();
+          if (!word) continue;
+
+          const candidate = currentLine ? `${currentLine} ${word}` : word;
+          const candidateWidth = font.widthOfTextAtSize(candidate, fontSize);
+
+          if (candidateWidth <= maxWidth) {
+            currentLine = candidate;
+            continue;
+          }
+
+          if (currentLine) {
+            lines.push(currentLine);
+            currentLine = '';
+          }
+
+          const wordWidth = font.widthOfTextAtSize(word, fontSize);
+          if (wordWidth <= maxWidth) {
+            currentLine = word;
+            continue;
+          }
+
+          const fragments = this._breakWordIntoChunks(font, word, fontSize, maxWidth);
+          if (fragments.length) {
+            for (let i = 0; i < fragments.length - 1; i++) {
+              lines.push(fragments[i]);
+            }
+            currentLine = fragments[fragments.length - 1];
+          } else {
+            currentLine = word;
+          }
+        }
+
+        if (currentLine) {
+          lines.push(currentLine);
+        } else if (trimmedParagraph.length === 0) {
+          lines.push('');
+        }
+      }
+
+      return lines;
+    },
+
+    _breakWordIntoChunks(font, word, fontSize, maxWidth) {
+      if (!word) return [];
+      const chunks = [];
+      let current = '';
+
+      for (const char of Array.from(word)) {
+        const candidate = current + char;
+        const width = font.widthOfTextAtSize(candidate, fontSize);
+
+        if (width <= maxWidth || current.length === 0) {
+          current = candidate;
+        } else {
+          chunks.push(current);
+          current = char;
+        }
+      }
+
+      if (current) {
+        chunks.push(current);
+      }
+
+      return chunks;
+    },
+
     updateScale() {
       this.$nextTick(() => {
         const viewerContainer = this.$refs.viewerContainer;
@@ -833,10 +1159,18 @@ export default {
   --lore-background: url('@/assets/documents/lore-sheet.png');
   --equipment-background: url('@/assets/documents/equipment-sheet.png');
   --species-background: url('@/assets/documents/species-sheet.png');
-  --talent-background: url('@/assets/documents/talent-sheet.png');
+  --talent-background: url('@/assets/documents/yellow-page.png');
   --toc-background: url('@/assets/documents/toc-sheet.png');
   --gameplay-background: url('@/assets/documents/gameplay-sheet.png');
   --advanced-background: url('@/assets/documents/advanced-sheet.png');
+
+  --purple-background: url('@/assets/documents/purple-page.png');
+  --red-background: url('@/assets/documents/red-page.png');
+  --yellow-background: url('@/assets/documents/yellow-page.png');
+  --blue-background: url('@/assets/documents/blue-page.png');
+  --green-background: url('@/assets/documents/green-page.png');
+  --orange-background: url('@/assets/documents/orange-page.png');
+  --pink-background: url('@/assets/documents/pink-page.png');
 
   --header-color: #000000;
   --page-color: #000000;
@@ -1069,18 +1403,6 @@ export default {
   position: relative;
 }
 
-.page::before {
-  content: "";
-  position: absolute;
-  top: 60px;
-  left: 60px;
-  right: 60px;
-  bottom: 58px;
-  border-left: 12px solid #ff000042;
-  border-right: 12px solid #ff000042;
-  border-top: 12px solid #ff000042;
-}
-
 .page-watermark {
   position: absolute;
   top: 50%;
@@ -1103,7 +1425,7 @@ export default {
   top: 20px;
   font-size: 18px;
   font-family: "Bahnschrift";
-  color: #ff0000;
+  color: #000000;
   z-index: 5;
   text-align: center;
 }
@@ -1139,7 +1461,11 @@ export default {
 }
 
 .page.page-talent {
-  background: var(--talent-background);
+  display: flex;
+  gap: 25px;
+  flex-wrap: nowrap;
+
+  background: var(--yellow-background);
   --header-color: var(--talent-color);
   --page-color: var(--talent-page-number);
 }
@@ -1154,6 +1480,48 @@ export default {
   background: var(--advanced-background);
   --header-color: var(--advanced-color);
   --page-color: var(--advanced-page-number);
+}
+
+.page.page-purple {
+  background: var(--purple-background);
+  --header-color: var(--lore-color);
+  --page-color: var(--lore-page-number);
+}
+
+.page.page-red {
+  background: var(--red-background);
+  --header-color: var(--advanced-color);
+  --page-color: var(--advanced-page-number);
+}
+
+.page.page-yellow {
+  background: var(--yellow-background);
+  --header-color: var(--talent-color);
+  --page-color: var(--talent-page-number);
+}
+
+.page.page-blue {
+  background: var(--blue-background);
+  --header-color: var(--info-color);
+  --page-color: var(--info-page-number);
+}
+
+.page.page-green {
+  background: var(--green-background);
+  --header-color: var(--species-color);
+  --page-color: var(--species-page-number);
+}
+
+.page.page-orange {
+  background: var(--orange-background);
+  --header-color: var(--equipment-color);
+  --page-color: var(--equipment-page-number);
+}
+
+.page.page-pink {
+  background: var(--pink-background);
+  --header-color: var(--gameplay-color);
+  --page-color: var(--gameplay-page-number);
 }
 
 .page h1 {
@@ -1214,6 +1582,65 @@ export default {
   top: 120px;
   display: flex;
   gap: 50px;
+}
+
+.page.page-talent .page-content {
+  left: 175px;
+  right: 175px;
+  top: 100px;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  align-content: center;
+  justify-content: center;
+  gap: 16px;
+  overflow: none;
+}
+
+.page.page-talent .page-content .talent-tree {
+  flex: 1;
+  max-width: 300px;
+  min-width: 300px;
+  /* fixed width to match column */
+  overflow: visible;
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+.full-column {
+  width: calc(459px * 2 + 58px);
+}
+
+.talent-content {
+  position: absolute;
+  bottom: 289px;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  left: -175px;
+  right: -175px;
+  width: 137%;
+  justify-content: center;
+  align-content: center;
+  align-items: center;
+}
+
+.talent-label {
+  position: relative;
+  left: -4px;
+  right: 0;
+  text-align: center;
+  font-size: 66px;
+  font-family: "Bahnschrift";
+  font-weight: bold;
+}
+
+.talent-description {
+  font-size: 22px;
+  font-family: "Bahnschrift";
+  text-align: center;
+  position: relative;
+  top: -10px;
 }
 
 .column {

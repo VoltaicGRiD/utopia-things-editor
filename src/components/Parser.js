@@ -1,3 +1,5 @@
+import ChevronTalentTree from "./talents/chevron";
+
 /**
  * Parse lightweight markup into structured DOM nodes.
  *
@@ -66,7 +68,7 @@ export function parse(input, columnCount = 1) {
   // ---------- Regex (precompiled) ----------
   const RE = {
     comment: /^\/\/\s+(.*)$/i,
-    page: /^\/page\s+(equipment|gameplay|info|lore|species|talent|toc|advanced)\s+(.+)$/i,
+    page: /^\/page\s+(red|pink|orange|yellow|purple|green|blue|talent)\s+(.+)$/i,
     pageNum: /^\/page-num\s+(\d+)$/i,
     column: /^\/(column|col)$/i,
     spacing: /^\/(spacing|sp)\s+(\d+)$/i,
@@ -83,8 +85,8 @@ export function parse(input, columnCount = 1) {
     heading: /^(#+)\s+(.*)$/, 
 
     // Talent handling
-    talentStart: /^\/tree$/i,
-    talentJson: /^{\s*"name":\s*"(.*?)",\s*"description":\s*"(.*?)",\s*"prerequisites":\s*\[(.*?)\],\s*"effects":\s*\[(.*?)\]\s*}$/i,
+    talentStart: /^\/tree\s+([3-5])$/i,
+    talentContent: /^\/talent\s+(label|description)\s+(.*)$/i,
     talentEnd: /^\/end-tree$/i,
 
     // style blocks
@@ -114,6 +116,10 @@ export function parse(input, columnCount = 1) {
   let spellArtistries = [];
   let spellSectionContainer = null;
   let spellSectionCount = 0;
+
+  let treeDiv = null; // container for current talent tree
+  let talentTreeInstance = null;
+
   let tocDiv = null; // TOC container
   let styleCollect = null; // array of style lines when inside style block
   let specialistDiv = null; // current specialist table
@@ -137,12 +143,18 @@ export function parse(input, columnCount = 1) {
     activePageIndex = pages.length - 1;
     activePage = page;
     pageColumns[activePageIndex] = [];
-    const firstCol = makeColumn();
-    page.querySelector('.page-content').appendChild(firstCol);
-    pageColumns[activePageIndex].push(firstCol);
-    activeColumnIndex = 0;
-    const watermark = createEl('div', 'page-watermark', "HOMEBREW");
-    activePage.appendChild(watermark);
+    if (type !== "talent") {
+      const firstCol = makeColumn();
+      page.querySelector('.page-content').appendChild(firstCol);
+      pageColumns[activePageIndex].push(firstCol);
+      activeColumnIndex = 0;
+    }
+    else {
+      const col = createEl('div', 'full-column talent-content');
+      page.querySelector('.page-content').appendChild(col);
+      pageColumns[activePageIndex].push(col);
+      activeColumnIndex = 0;
+    }
     if (pageLabel) {
       const pageDiv = createEl('div', 'page-number');
       if (/^\d+$/.test(pageLabel)) {
@@ -176,6 +188,32 @@ export function parse(input, columnCount = 1) {
     spellDiv = spell;
     spellSectionContainer = contentWrap;
     spellSectionCount = 0;
+  };
+
+  const startTalent = (count) => {
+    if (!activePage) return;
+    const scale = Math.max(1, parseInt(count, 10) || 5);
+    const pageContent = activePage.querySelector('.page-content');
+    if (!pageContent) return;
+
+    if (!treeDiv) {
+      treeDiv = createEl('div', 'talent-tree');
+      pageContent.appendChild(treeDiv);
+    }
+
+    if (talentTreeInstance) {
+      talentTreeInstance.destroy();
+      talentTreeInstance = null;
+    }
+
+    treeDiv.innerHTML = '';
+    talentTreeInstance = new ChevronTalentTree(treeDiv, { scale, columns: 3 });
+  };
+
+  const endTalent = () => {
+    if (!talentTreeInstance) return;
+    talentTreeInstance = null;
+    treeDiv = null;
   };
 
   const addEquipmentDetail = (kind, rawContent) => {
@@ -251,22 +289,30 @@ export function parse(input, columnCount = 1) {
   };
 
   const endSpell = () => {
-      try {
+    if (!spellDiv) {
+      spellSectionContainer = null;
+      spellSectionCount = 0;
+      spellArtistries = [];
+      return;
+    }
+
+    try {
       const section = spellDiv.querySelector('.section-2');
       const artistryCount = spellArtistries.length;
       const container = createEl('div', 'artistry-container artistry-container-' + artistryCount, '');
       section.appendChild(container);
 
       for (const artistry of spellArtistries) {
-        const artistryIcon = createEl('img', `artistry-icon artistry-${artistry}`, '')
+        const artistryIcon = createEl('img', `artistry-icon artistry-${artistry}`, '');
         artistryIcon.setAttribute('width', '130');
         artistryIcon.setAttribute('height', '130');
         container.appendChild(artistryIcon);
-      } 
+      }
 
       spellDiv = null;
       spellSectionContainer = null;
       spellSectionCount = 0;
+      spellArtistries = [];
     } catch (e) {
       console.error('Error finalizing spell:', e);
     }
@@ -376,6 +422,22 @@ export function parse(input, columnCount = 1) {
     }
   };
 
+  const addTalentContent = (type, content) => {
+    if (!activePage) return;
+    if (!getActiveColumn().classList.contains('talent-content')) return;
+
+    if (type === "label") {
+      const label = createEl('div', 'talent-label', content);
+      getActiveColumn().appendChild(label);
+    }
+
+    if (type === "description") {
+      const description = createEl('div', 'talent-description', '');
+      description.innerHTML = applyInlineFormatting(content);
+      getActiveColumn().appendChild(description);
+    }
+  };
+
   // Attribute block parser: supports {.class1 .class2 #id style="color:red;" span-2}
   const parseAttributeBlock = (body) => {
     const attrMatch = body.match(/\s\{([^}]*)}\s*$/);
@@ -432,7 +494,8 @@ export function parse(input, columnCount = 1) {
     // If no page has been created yet, ignore all non-page lines to avoid
     // inserting a blank initial page. Allow style blocks and comments.
     if (activePageIndex < 0 && !RE.page.test(line) && !RE.styleBegin.test(line) && !RE.styleEnd.test(line) && !RE.comment.test(line)) {
-      continue;
+      startNewPage('default');
+      ensureColumn();
     }
 
     // Style block collection mode
@@ -530,6 +593,14 @@ export function parse(input, columnCount = 1) {
     if ((m = line.match(RE.spell))) { startSpell(m[1]); continue; }
     if ((m = line.match(RE.specialist))) { addSpecialistTable(); continue; }
     if ((m = line.match(RE.noteStart))) { startNote(m[1], m[2]); continue; }
+    if ((m = line.match(RE.talentStart))) { startTalent(m[1]); continue; }
+    if (RE.talentEnd.test(line)) { endTalent(); continue; }
+    if ((m = line.match(RE.talentContent))) {
+      const type = m[1];
+      const content = m[2];
+      addTalentContent(type, content);
+      continue;
+    }
     if ((m = line.match(RE.img))) {
       const src = m[1];
       const rest = (m[2] || '').trim();
@@ -543,7 +614,7 @@ export function parse(input, columnCount = 1) {
       getActiveColumn().appendChild(img);
       continue;
     }
-    if (RE.blockEnd.test(line)) { endNote(); endEquipment(); endSpell(); endTOC(); continue; }
+  if (RE.blockEnd.test(line)) { endNote(); endEquipment(); endSpell(); endTOC(); continue; }
     if ((m = line.match(RE.toc))) { if (m[1].toLowerCase() === 'begin') startTOC(); else endTOC(); continue; }
     if (RE.hr.test(line) || /^\/hr$/i.test(line)) { getActiveColumn().appendChild(document.createElement('hr')); continue; }
     if (RE.pageBreak.test(line)) { const pb = createEl('div', 'page-break'); getActiveColumn().appendChild(pb); continue; }
@@ -622,9 +693,6 @@ export function parse(input, columnCount = 1) {
     const pAttrs = parseAttributeBlock(line);
     addParagraph(pAttrs.text, pAttrs);
   }
-
-  console.log(`Parsed ${pages.length} pages.`);
-  console.log(parent);
 
   return parent;
 }

@@ -1,0 +1,229 @@
+.chevron-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.talent-tree-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.talent-tree-children {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+  .chevron-container:hover::before {
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+    filter: drop-shadow(0px 0px 8px gold);
+  }
+
+.chevron-svg {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  filter: drop-shadow(2px 1px 6px rgba(0, 0, 0, 0.4))
+          drop-shadow(-2px 1px 6px rgba(0, 0, 0, 0.4))
+          drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.4))
+}
+
+.chevron {
+  height: 100%;
+  width: 100%;
+  fill: rgb(49, 36, 9);
+  /* background: radial-gradient(circle, #b9c2ca 0%, #616569 100%); */
+  stroke: white;
+  stroke-width: 1%;
+  stroke-linecap: round;
+  mask-clip: url(#chevronClip);
+}
+
+#myGradient {
+  fill: linear-gradient(135deg, rgba(185, 194, 202, 1) 0%, rgba(97, 101, 105, 1) 100%);
+}
+
+.title {
+  position: absolute;
+  color: var(--text-color);
+  top: 3%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 95%;
+  height: 2.3em;
+  font-weight: 900;
+  overflow-y: hidden;
+  font-synthesis: weight;
+  align-content: start;
+  justify-content: start;
+  background-color: transparent;
+  text-align: center;
+  border: none;
+  font-family: 'Bahnschrift', sans-serif;
+  font-size: 24px;
+  text-transform: uppercase;
+  resize: none;
+  filter: drop-shadow(1px 1px 4px black);
+}
+
+.chevron-controls {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  color: white;
+}
+
+.chevron-extras {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 300px;
+  height: auto;
+  padding: 0.5em;
+  border: 1px solid white;
+  background-color: rgb(50, 50, 50);
+  z-index: 9999;
+  display: none;
+  font-size: 0.8em;
+  flex-direction: column;
+  gap: 0.6em;
+  transform: scale(1.3);
+}
+
+  .chevron-extras:hover {
+    display: flex;
+  }
+
+.control-group {
+  display: flex;
+  flex-direction: row;
+  align-content: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.control-label {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+}
+
+.points-img {
+  position: absolute;
+  bottom: -20%;
+  left: 50.5%;
+  width: 50%;
+  transform: translate(-50%, 0);
+  object-fit: contain;
+}
+
+.skillbody {
+  font-family: 'Bahnschrift', sans-serif;
+  position: absolute;
+  width: 87%;
+  text-align: center;
+  color: white;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  height: 60%;
+  font-size: 18px;
+  background: transparent;
+  border: none;
+  resize: none;
+  font-stretch: condensed;
+  justify-content: center;
+  align-content: center;
+  overflow: hidden;
+  line-height: 1.1;
+}
+
+.body, .mind, .soul {
+  transform: translate(-50%, -50%);
+  position: absolute;
+  color: white;
+  font-size: 1em;
+  font-family: var(--font-bahnschrift);
+  font-optical-sizing: auto;
+  background-color: transparent;
+  width: 40px;  
+  text-align: center;
+  border: none;
+  filter: drop-shadow(0px 0px 4px black);
+  text-shadow: 0px 0px 4px black, 0.5px 0.5px 1px black;
+  z-index: 1000;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+  
+  .body::-webkit-outer-spin-button,
+  .body::-webkit-inner-spin-button {
+      /* display: none; <- Crashes Chrome on hover */
+      -webkit-appearance: none;
+      margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+  }
+
+  .mind::-webkit-outer-spin-button,
+  .mind::-webkit-inner-spin-button {
+      /* display: none; <- Crashes Chrome on hover */
+      -webkit-appearance: none;
+      margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+  }
+
+  .soul::-webkit-outer-spin-button,
+  .soul::-webkit-inner-spin-button {
+      /* display: none; <- Crashes Chrome on hover */
+      -webkit-appearance: none;
+      margin: 0; /* <-- Apparently some margin are still there even though it's hidden */
+  }
+
+.parent-chevron-controls {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  color: white;
+}
+
+.body {
+  left: 31%;
+}
+
+.mind {
+  left: 50.1%;
+}
+
+.soul {
+  left: 69%;
+}
+
+.context-menu {
+  position: fixed;
+  left: 0;
+  width: 165px;
+  height: auto;
+  padding: 0.5em;
+  border: 1px solid white;
+  background-color: rgb(50, 50, 50);
+  top: 0;
+  z-index: 9999;
+  transform: scale(2);
+}
+
+.control-label {
+  font-size: 0.8em;
+  width: 100%;
+  color: white;
+}
+
+  .control-label input {
+    width: 100%;
+  }
