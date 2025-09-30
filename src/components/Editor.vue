@@ -1613,13 +1613,14 @@ export default {
 
 .talent-content {
   position: absolute;
-  bottom: 289px;
+  bottom: 230px;
   display: flex;
   flex-direction: column;
   gap: 0px;
   left: -175px;
   right: -175px;
   width: 137%;
+  height: 250px;
   justify-content: center;
   align-content: center;
   align-items: center;
