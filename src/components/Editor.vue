@@ -74,13 +74,13 @@
             <label class="control-label"><i class="ra ra-book"></i> Insert Page</label>
             <select v-model="selectedPageType" @change="onPageDropdownSelect" class="control-select">
               <option disabled value="">Select Page Type...</option>
-              <option value="info">Info Page</option>
-              <option value="lore">Lore Page</option>
-              <option value="gameplay">Gameplay Page</option>
-              <option value="species">Species Page</option>
-              <option value="talent">Talent Page</option>
-              <option value="toc">ToC Page</option>
-              <option value="advanced">Advanced Page</option>
+              <option value="purple">Purple Page</option>
+              <option value="red">Red Page</option>
+              <option value="yellow">Yellow Page</option>
+              <option value="blue">Blue Page</option>
+              <option value="green">Green Page</option>
+              <option value="orange">Orange Page</option>
+              <option value="red">Red Page</option>
             </select>
           </div>
 

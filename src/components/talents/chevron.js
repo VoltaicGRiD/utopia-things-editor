@@ -307,7 +307,7 @@ const ChevronComponent = defineComponent({
         </svg>
       </div>
       <div class="chevron-controls">
-        <textarea class="title" :style="{ top: '2%' }"></textarea>
+        <textarea class="title" :style="{ top: '1%' }"></textarea>
         <img :src="pointsImage" alt="points" class="points-img" :style="{ bottom: offsets.imageBottom + 'px', height: '104px' }" />
         <textarea class="skillbody" :style="{ fontSize: textSize + 'px', top: descriptionTop + '%' }"></textarea>
         <input class="body" type="number" maxlength="1" min="0" max="9" value="0" :style="{ bottom: offsets.bodySoulBottom + 'px' }" />
