@@ -159,6 +159,7 @@ import domtoimage from 'dom-to-image-more';
 import JSZip from 'jszip';
 import * as FileSaver from 'file-saver';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { thingsCompletions } from './Completions.js';
 //import CustomDropdown from './CustomDropdown.vue';
 
 export default {
@@ -732,6 +733,28 @@ export default {
             ],
             colors: {
               'editor.background': '#1e1e1e'
+            }
+          });
+
+          monaco.languages.registerCompletionItemProvider('utopia', {
+            provideCompletionItems(model, position) {
+              const wordInfo = model.getWordUntilPosition(position);
+              const range = new monaco.Range(
+                position.lineNumber,
+                wordInfo.startColumn,
+                position.lineNumber,
+                wordInfo.endColumn
+              );
+
+              const completionList = thingsCompletions(monaco);
+              if (completionList && Array.isArray(completionList.suggestions)) {
+                completionList.suggestions = completionList.suggestions.map((item) => ({
+                  ...item,
+                  range: item.range ?? range,
+                }));
+              }
+
+              return completionList;
             }
           });
         } catch (e) {
@@ -2107,6 +2130,223 @@ export default {
   .editor {
     height: 360px;
   }
+}
+
+.creature {
+  position: absolute;
+  left: 40px;
+  width: 900px;
+  padding-left: 5px;
+  font-family: "Bahnschrift";
+  background: var(--rarity-crude);
+  isolation: isolate;
+  background-clip: padding-box;
+  /* don’t paint behind the border */
+
+  /* border-image as before */
+  border: 5px solid transparent;
+  border-image-source: var(--frame-crude);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  border-image-width: var(--frame-edge);
+  border-image-repeat: round;
+}
+
+.creature .creature-title {
+  font-weight: bold;
+  font-size: 21.5px;
+  padding-top: 10px;
+  padding-left: 5px;
+}
+
+.creature .creature-type {
+  padding-left: 5px;
+}
+
+.creature .creature-dr {
+  color: white;
+  padding-left: 5px;
+}
+
+.creature .creature-first-block {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  justify-content: center;
+}
+
+.creature .creature-first-block .creature-stats,
+.creature .creature-first-block .creature-bd,
+.creature .creature-first-block .creature-travel {
+  flex: 1;
+  font-size: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+  justify-content: center;
+
+  background: var(--section-1-bg);
+  /* clip the background so it doesn’t render under the border */
+  isolation: isolate;
+  background-clip: padding-box;
+
+  /* border-image as before */
+  border: 5px solid transparent;
+  border-image-source: var(--section-1-border);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  border-image-width: var(--frame-edge);
+  border-image-repeat: round;
+}
+
+.creature .creature-defenses {
+  display: flex;
+  flex-direction: column;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 18px;
+  font-family: "Bahnschrift";
+}
+
+.creature .creature-defenses .creature-defense-header {
+  font-weight: bold;
+  padding-top: 5px;
+}
+
+.creature .creature-defenses .creature-defenses-container {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  padding-bottom: 5px;
+}
+
+.creature .creature-defenses .creature-defense {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.creature .creature-attributes {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
+
+.creature .creature-attributes .creature-attribute {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: "Bahnschrift";
+  font-size: 18px;
+  padding-top: 5px;
+
+  background: var(--section-1-bg);
+  /* clip the background so it doesn’t render under the border */
+  isolation: isolate;
+  background-clip: padding-box;
+
+  /* border-image as before */
+  border: 5px solid transparent;
+  border-image-source: var(--section-1-border);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  border-image-width: var(--frame-edge);
+  border-image-repeat: round;
+}
+
+.creature .creature-attributes .creature-attribute .creature-attribute-label {
+  font-weight: bold;
+  text-align: center;
+}
+
+.creature .creature-description-container {
+  font-size: 20px;
+  line-height: 1.22;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding-left: 5px;
+  padding-top: 10px;
+  padding-right: 10px;
+
+  background: var(--section-2-bg);
+  /* clip the background so it doesn’t render under the border */
+  isolation: isolate;
+  background-clip: padding-box;
+
+  /* border-image as before */
+  border: 5px solid transparent;
+  border-image-source: var(--section-2-border);
+  border-image-slice: var(--edge-top) var(--edge-right) var(--edge-bottom) var(--edge-left);
+  border-image-width: var(--frame-edge);
+  border-image-repeat: round;
+}
+
+.creature .creature-description-container p {
+  font-family: "Bahnschrift";
+  font-size: 20px;
+  line-height: 1.22;
+  margin: 0;
+}
+
+.creature .creature-description-container .creature-description-columns {
+  display: flex;
+  flex-direction: row;
+  gap: 30px;
+}
+
+.creature .creature-description-container .creature-description-column {
+  flex: 1;
+}
+
+.creature .creature-drops-harvest {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 10px;
+  align-items: center;
+  justify-content: center;
+  color: rgb(124, 124, 124);
+  padding-bottom: 10px;
+}
+
+.creature .creature-drops-harvest .creature-drops-harvest-header {
+  font-weight: bold;
+  font-size: 18px;
+  padding-top: 5px;
+}
+
+.creature .creature-drops-harvest .creature-drops-harvest-content {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.creature .creature-drops-harvest .creature-drops,
+.creature .creature-drops-harvest .creature-harvest {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  font-size: 16px;
+  align-items: center;
+  justify-content: center;
+}
+
+.creature .creature-drops-harvest .creature-harvest-header {
+  font-weight: bold;
+}
+
+.creature .creature-flavor {
+  color: white;
+  font-family: "Bahnschrift";
+  font-size: 20px;
+  padding-left: 5px;
+  padding-bottom: 10px;
 }
 
 .equipment {

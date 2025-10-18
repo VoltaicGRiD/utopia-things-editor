@@ -96,7 +96,11 @@ export function parse(input, columnCount = 1) {
     codeFenceBegin: /^```\s*(\w+)?\s*$/,
     hr: /^-{3,}\s*$/,
     pageBreak: /^\/page-break$/i,
-    columns: /^\/columns\s+(\d+)$/i
+    columns: /^\/columns\s+(\d+)$/i,
+
+    // creature stat blocks
+    creatureStart: /^\/creature\s+(.*)$/i,
+    creatureEnd: /^\/endcreature$/i,
   };
 
   // ---------- State ----------
@@ -116,6 +120,12 @@ export function parse(input, columnCount = 1) {
   let spellArtistries = [];
   let spellSectionContainer = null;
   let spellSectionCount = 0;
+
+  let buildingCreature = false;
+  let buildingCreatureDescription1 = false;
+  let buildingCreatureDescription2 = false;
+  let buildingCreatureDescriptionIndex = 0;
+  let creatureData = {};
 
   let treeDiv = null; // container for current talent tree
   let talentTreeInstance = null;
@@ -165,6 +175,273 @@ export function parse(input, columnCount = 1) {
       activePage.appendChild(pageDiv);
     }
   };
+
+  const startCreature = (name) => {
+    buildingCreature = true;
+    creatureData = { name };
+  }
+
+  const endCreature = () => {
+    console.log('creatureData:', creatureData);
+    createCreature(creatureData);
+    creatureData = {};
+    buildingCreature = false;
+  };
+
+  // Create creature
+  const createCreature = (creatureData) => {
+    const { name, type, dr, stats, bd, travel, defense, agi, str, int, wil, dis, cha, drops, harvest, description1, description2, flavor } = creatureData;
+    console.log('Creating creature:', name, type, dr, stats, bd, travel, defense, agi, str, int, wil, dis, cha, drops, harvest, description1, description2, flavor);
+
+    const creatureDiv = createEl('div', 'creature');
+    const title = createEl('div', 'creature-title', name || 'Unnamed Creature');
+    creatureDiv.appendChild(title);
+    activePage.querySelector(".page-content").appendChild(creatureDiv);
+
+    const typeDiv = createEl('div', 'creature-type', type || 'Unknown Type');
+    creatureDiv.appendChild(typeDiv);
+
+    const drDiv = createEl('div', 'creature-dr', 'DR ' + (dr || 'N/A'));
+    creatureDiv.appendChild(drDiv);
+    
+    const firstBlock = createEl('div', 'creature-first-block');
+    creatureDiv.appendChild(firstBlock);
+
+    const statsDiv = createEl('div', 'creature-stats');
+    const shpSpan = createEl('span', 'creature-shp');
+    shpSpan.innerHTML = applyInlineFormatting('**' + (stats ? stats.split(' ')[0] + "** SHP" : 'N/A'));
+    const dhpSpan = createEl('span', 'creature-dhp');
+    dhpSpan.innerHTML = applyInlineFormatting('**' + (stats ? stats.split(' ')[1] + "** DHP" : 'N/A'));
+    const staSpan = createEl('span', 'creature-sta');
+    staSpan.innerHTML = applyInlineFormatting('**' + (stats ? stats.split(' ')[2] + "** Stamina" : 'N/A'));
+    statsDiv.appendChild(shpSpan);
+    statsDiv.appendChild(dhpSpan);
+    statsDiv.appendChild(staSpan);
+    firstBlock.appendChild(statsDiv);
+
+    const bdDiv = createEl('div', 'creature-bd');
+    const blockSpan = createEl('span', 'creature-block');
+    blockSpan.innerHTML = applyInlineFormatting('**' + (bd ? bd.split(' ')[0] : 'N/A') + "** Block");
+    bdDiv.appendChild(blockSpan);
+    const dodgeSpan = createEl('span', 'creature-dodge');
+    dodgeSpan.innerHTML = applyInlineFormatting('**' + ((bd ? bd.split(' ')[1] : 'N/A')) + "** Dodge");
+    bdDiv.appendChild(dodgeSpan);
+    firstBlock.appendChild(bdDiv);
+
+    const travelDiv = createEl('div', 'creature-travel');
+    const landSpan = createEl('span', 'creature-land');
+    landSpan.innerHTML = applyInlineFormatting('**' + (travel ? travel.split(' ')[0] : 'N/A') + "** Land Travel");
+    travelDiv.appendChild(landSpan);
+    const waterSpan = createEl('span', 'creature-water');
+    waterSpan.innerHTML = applyInlineFormatting('**' + (travel ? travel.split(' ')[1] : 'N/A') + "** Water Travel");
+    travelDiv.appendChild(waterSpan);
+    const airSpan = createEl('span', 'creature-air');
+    airSpan.innerHTML = applyInlineFormatting('**' + (travel ? travel.split(' ')[2] : 'N/A') + "** Air Travel");
+    travelDiv.appendChild(airSpan);
+    firstBlock.appendChild(travelDiv);
+
+    const defensesDiv = createEl('div', 'creature-defenses');
+    const defensesHeader = createEl('span', 'creature-defense-header', 'Defenses');
+    defensesDiv.appendChild(defensesHeader);
+    const defensesContainer = createEl('div', 'creature-defenses-container');
+    ['Physical', 'Energy', 'Heat', 'Chill', 'Psyche'].forEach((def, idx) => {
+      const defSpan = createEl('span', 'creature-defense');
+      defSpan.innerHTML = applyInlineFormatting('**' + (defense ? defense.split(' ')[idx] : 'N/A') + "** " + def);
+      defensesContainer.appendChild(defSpan);
+    });
+    defensesDiv.appendChild(defensesContainer);
+    creatureDiv.appendChild(defensesDiv);
+
+    const attributesDiv = createEl('div', 'creature-attributes');
+    let sign = '';
+
+    if (agi && agi.split(' ').length === 3) {
+      const agilityDiv = createEl('div', 'creature-attribute');
+      sign = agi.split(' ')[0].startsWith('-') ? '' : '+';
+      const agiLabel = createEl('span', 'creature-attribute-label', `${sign}${agi ? agi.split(' ')[0] : 'N/A'} Agility`);
+      agilityDiv.appendChild(agiLabel);
+
+      const speedSpan = createEl('span', 'creature-value');
+      const speed = agi ? agi.split(' ')[1] : 'N/A';
+      sign = speed.startsWith('-') ? '' : '+';
+      speedSpan.innerHTML = applyInlineFormatting(`**${sign}${speed}** Speed`);
+      agilityDiv.appendChild(speedSpan);
+
+      const dexteritySpan = createEl('span', 'creature-value');
+      const dexterity = agi ? agi.split(' ')[2] : 'N/A';
+      sign = dexterity.startsWith('-') ? '' : '+';
+      dexteritySpan.innerHTML = applyInlineFormatting(`**${sign}${dexterity}** Dexterity`);
+      agilityDiv.appendChild(dexteritySpan);
+
+      attributesDiv.appendChild(agilityDiv);
+    }
+
+    if (str && str.split(' ').length === 3) {
+      const strengthDiv = createEl('div', 'creature-attribute');
+      sign = str.startsWith('-') ? '' : '+';
+      const strLabel = createEl('span', 'creature-attribute-label', `${sign}${str ? str.split(' ')[0] : 'N/A'} Strength`);
+      strengthDiv.appendChild(strLabel);
+  
+      const powerSpan = createEl('span', 'creature-value');
+      const power = str ? str.split(' ')[1] : 'N/A';
+      sign = power.startsWith('-') ? '' : '+';
+      powerSpan.innerHTML = applyInlineFormatting(`**${sign}${power}** Power`);
+      strengthDiv.appendChild(powerSpan);
+
+      const fortitudeSpan = createEl('span', 'creature-value');
+      const fortitude = str ? str.split(' ')[2] : 'N/A';
+      sign = fortitude.startsWith('-') ? '' : '+';
+      fortitudeSpan.innerHTML = applyInlineFormatting(`**${sign}${fortitude}** Fortitude`);
+      strengthDiv.appendChild(fortitudeSpan);
+
+      attributesDiv.appendChild(strengthDiv);
+    }
+
+    if (int && int.split(' ').length === 3) {
+      const intellectDiv = createEl('div', 'creature-attribute');
+      sign = int.startsWith('-') ? '' : '+';
+      const intLabel = createEl('span', 'creature-attribute-label', `${sign}${int ? int.split(' ')[0] : 'N/A'} Intellect`);
+      intellectDiv.appendChild(intLabel);
+
+      const engineeringSpan = createEl('span', 'creature-value');
+      const engineering = int ? int.split(' ')[1] : 'N/A';
+      sign = engineering.startsWith('-') ? '' : '+';
+      engineeringSpan.innerHTML = applyInlineFormatting(`**${sign}${engineering}** Engineering`);
+      intellectDiv.appendChild(engineeringSpan);
+      
+      const memoryDiv = createEl('span', 'creature-value');
+      const memory = int ? int.split(' ')[2] : 'N/A';
+      sign = memory.startsWith('-') ? '' : '+';
+      memoryDiv.innerHTML = applyInlineFormatting(`**${sign}${memory}** Memory`);
+      intellectDiv.appendChild(memoryDiv);
+
+      attributesDiv.appendChild(intellectDiv);
+    }
+
+    if (wil && wil.split(' ').length === 3) {
+      const willDiv = createEl('div', 'creature-attribute');
+      sign = wil.startsWith('-') ? '' : '+';
+      const wilLabel = createEl('span', 'creature-attribute-label', `${sign}${wil ? wil.split(' ')[0] : 'N/A'} Will`);
+      willDiv.appendChild(wilLabel);
+
+      const resolveSpan = createEl('span', 'creature-value');
+      const resolve = wil ? wil.split(' ')[1] : 'N/A';
+      sign = resolve.startsWith('-') ? '' : '+';
+      resolveSpan.innerHTML = applyInlineFormatting(`**${sign}${resolve}** Resolve`);
+      willDiv.appendChild(resolveSpan);
+
+      const awarenessSpan = createEl('span', 'creature-value');
+      const awareness = wil ? wil.split(' ')[2] : 'N/A';
+      sign = awareness.startsWith('-') ? '' : '+';
+      awarenessSpan.innerHTML = applyInlineFormatting(`**${sign}${awareness}** Awareness`);
+      willDiv.appendChild(awarenessSpan);
+
+      attributesDiv.appendChild(willDiv);
+    }
+
+    if (dis && dis.split(' ').length === 3) {
+      const displayDiv = createEl('div', 'creature-attribute');
+      sign = dis.startsWith('-') ? '' : '+';
+      const disLabel = createEl('span', 'creature-attribute-label', `${sign}${dis ? dis.split(' ')[0] : 'N/A'} Display`);
+      displayDiv.appendChild(disLabel);
+
+      const portrayalSpan = createEl('span', 'creature-value');
+      const portrayal = dis ? dis.split(' ')[1] : 'N/A';
+      sign = portrayal.startsWith('-') ? '' : '+';
+      portrayalSpan.innerHTML = applyInlineFormatting(`**${sign}${portrayal}** Portrayal`);
+      displayDiv.appendChild(portrayalSpan);
+
+      const stuntSpan = createEl('span', 'creature-value');
+      const stunt = dis ? dis.split(' ')[2] : 'N/A';
+      sign = stunt.startsWith('-') ? '' : '+';
+      stuntSpan.innerHTML = applyInlineFormatting(`**${sign}${stunt}** Stunt`);
+      displayDiv.appendChild(stuntSpan);
+
+      attributesDiv.appendChild(displayDiv);
+    }
+
+    if (cha && cha.split(' ').length === 3) {
+      const charmDiv = createEl('div', 'creature-attribute');
+      sign = cha.startsWith('-') ? '' : '+';
+      const chaLabel = createEl('span', 'creature-attribute-label', `${sign}${cha ? cha.split(' ')[0] : 'N/A'} Charm`);
+      charmDiv.appendChild(chaLabel);
+
+      const appealSpan = createEl('span', 'creature-value');
+      const appeal = cha ? cha.split(' ')[1] : 'N/A';
+      sign = appeal.startsWith('-') ? '' : '+';
+      appealSpan.innerHTML = applyInlineFormatting(`**${sign}${appeal}** Appeal`);
+      charmDiv.appendChild(appealSpan);
+
+      const languageSpan = createEl('span', 'creature-value');
+      const language = cha ? cha.split(' ')[2] : 'N/A';
+      sign = language.startsWith('-') ? '' : '+';
+      languageSpan.innerHTML = applyInlineFormatting(`**${sign}${language}** Language`);
+      charmDiv.appendChild(languageSpan);
+      
+      attributesDiv.appendChild(charmDiv);
+      creatureDiv.appendChild(attributesDiv);
+    }
+
+    const descriptionContainerDiv = createEl('div', 'creature-description-container');
+    const descriptionColumnContainer = createEl('div', 'creature-description-columns');
+    descriptionContainerDiv.appendChild(descriptionColumnContainer);
+    if (description1) {
+      const descriptionColumn1 = createEl('div', 'creature-description-column');
+      descriptionColumnContainer.appendChild(descriptionColumn1);
+      for (const line of (description1 || [])) {
+        const descPara = createEl('p', 'creature-description-text');
+        descPara.innerHTML = applyInlineFormatting(line);
+        descriptionColumn1.appendChild(descPara);
+      }
+      descriptionColumnContainer.appendChild(descriptionColumn1);
+    }
+    if (description2) {
+      const descriptionColumn2 = createEl('div', 'creature-description-column');
+      descriptionColumnContainer.appendChild(descriptionColumn2);
+      for (const line of (description2 || [])) {
+        const descPara = createEl('p', 'creature-description-text');
+        descPara.innerHTML = applyInlineFormatting(line);
+        descriptionColumn2.appendChild(descPara);
+      }
+      descriptionColumnContainer.appendChild(descriptionColumn2);
+    }
+    creatureDiv.appendChild(descriptionContainerDiv);
+
+    if (drops || harvest) {
+      const dropsAndHarvestDiv = createEl('div', 'creature-drops-harvest');
+      const dropsHeader = createEl('div', 'creature-drops-harvest-header', 'DROPS AND HARVESTS');
+      dropsAndHarvestDiv.appendChild(dropsHeader);
+
+      const dropsContent = createEl('div', 'creature-drops-harvest-content');
+      if (drops) {
+        const dropsDiv = createEl('div', 'creature-drops');
+        const items = drops.split(',') || '';
+        for (let i = 0; i < items.length; i++) {
+          const itemSpan = createEl('span', 'creature-drops-item', items[i].trim());
+          dropsDiv.appendChild(itemSpan);
+        }
+        dropsContent.appendChild(dropsDiv);
+      }
+      if (harvest) {
+        const harvestDiv = createEl('div', 'creature-harvest');
+        const testSpan = createEl('span', 'creature-harvest-header', harvest.split(':')[0]);
+        harvestDiv.appendChild(testSpan);
+        const items = harvest.split(':')[1].split(',') || '';
+        for (let i = 0; i < items.length; i++) {
+          const itemSpan = createEl('span', 'creature-harvest-item', items[i].trim());
+          harvestDiv.appendChild(itemSpan);
+        }
+        dropsContent.appendChild(harvestDiv);
+      }
+      dropsAndHarvestDiv.appendChild(dropsContent);
+      descriptionContainerDiv.appendChild(dropsAndHarvestDiv);
+    }
+
+    if (flavor) {
+      const flavorDiv = createEl('div', 'creature-flavor', flavor);
+      creatureDiv.appendChild(flavorDiv);
+    }
+  }
 
   const startEquipment = (rarity, name) => {
     const equipment = createEl('div', 'equipment rarity-' + rarity.toLowerCase());
@@ -533,6 +810,65 @@ export function parse(input, columnCount = 1) {
       continue;
     }
 
+    if (buildingCreature && !RE.creatureEnd.test(line)) {
+      if (line.trim().startsWith('/desc')) {
+        if (buildingCreatureDescriptionIndex === 0) {
+          buildingCreatureDescription1 = true;
+        } else if (buildingCreatureDescriptionIndex === 1) {
+          buildingCreatureDescription2 = true;
+        }
+        continue;
+      }
+
+      if (buildingCreatureDescription1) {
+        if (line.trim() === '/enddesc') {
+          buildingCreatureDescription1 = false;
+          buildingCreatureDescriptionIndex += 1;
+          continue;
+        }
+
+        if (creatureData['description1'] === undefined) {
+          creatureData['description1'] = [line.trim()];
+        } else {
+          if (line.trim() === '') {
+            creatureData['description1'].push('\n');
+          } else {
+            creatureData['description1'].push(line.trim());
+          }
+        } 
+        
+        continue;
+      } else if (buildingCreatureDescription2) {
+        if (line.trim() === '/enddesc') {
+          buildingCreatureDescription2 = false;
+          buildingCreatureDescriptionIndex += 1;
+          continue;
+        }
+
+        if (creatureData['description2'] === undefined) {
+          creatureData['description2'] = [line.trim()];
+        } else {
+          if (line.trim() === '') {
+            creatureData['description2'].push('\n');
+          } else {
+            creatureData['description2'].push(line.trim());
+          }
+        }
+        
+        continue;
+      }
+
+      const key = line.trim().split(' ')[0].substring(1).toLowerCase();
+      const value = line.trim().split(' ').slice(1).join(' ').trim();
+
+      console.log('Creature line:', line, 'key:', key, 'value:', value);
+
+      if (key && value) {
+        creatureData[key] = (creatureData[key] || '') + (creatureData[key] ? '\n' : '') + value;
+      }
+      continue;
+    }
+
     if (equipmentDiv && !RE.blockEnd.test(line)) {
       if (RE.equipmentNext.test(line)) { nextEquipmentSection(); continue; }
       const mDet = line.match(RE.equipmentDetail);
@@ -604,6 +940,8 @@ export function parse(input, columnCount = 1) {
     if ((m = line.match(RE.specialist))) { addSpecialistTable(); continue; }
     if ((m = line.match(RE.noteStart))) { startNote(m[1], m[2]); continue; }
     if ((m = line.match(RE.talentStart))) { startTalent(m[1]); continue; }
+    if ((m = line.match(RE.creatureStart))) { startCreature(m[1]); continue; }
+    if ((m = line.match(RE.creatureEnd))) { endCreature(); continue; }
     if (RE.talentEnd.test(line)) { endTalent(); continue; }
     if ((m = line.match(RE.talentContent))) {
       const type = m[1];
