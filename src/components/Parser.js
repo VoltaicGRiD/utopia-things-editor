@@ -841,7 +841,7 @@ export function parse(input, columnCount = 1) {
       } else if (buildingCreatureDescription2) {
         if (line.trim() === '/enddesc') {
           buildingCreatureDescription2 = false;
-          buildingCreatureDescriptionIndex += 1;
+          buildingCreatureDescriptionIndex = 0; // Reset for the next creature
           continue;
         }
 

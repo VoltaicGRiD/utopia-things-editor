@@ -1904,7 +1904,7 @@ export default {
   color: var(--header-color, #573084);
   font-family: "Rockwell Nova Condensed";
   font-weight: bold;
-  font-size: var(--subheader-font-px, 24pt);
+  font-size: calc(var(--subheader-font-px, 24pt) - 4pt);
   line-height: 1.15;
   margin: 38px 0 -5px;
 }
@@ -1913,7 +1913,7 @@ export default {
   color: var(--header-color, #573084);
   font-family: "Rockwell Nova Condensed";
   font-weight: bold;
-  font-size: 46px;
+  font-size: calc(var(--subheader-font-px, 24pt) - 8pt);
   line-height: 1.15;
   margin: 28px 0 -5px;
 }
